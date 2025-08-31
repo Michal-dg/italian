@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Parola Chiave: Domina l'Italiano</title>
+    <title>Parola Chiave: Włoski od Podstaw</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -71,7 +71,7 @@
     <div id="app" class="w-full max-w-md mx-auto p-4 sm:p-6">
         <header class="text-center mb-4">
             <div id="header-image-container" class="relative w-full h-24 bg-slate-200 rounded-lg mb-4 overflow-hidden group">
-                <img id="header-image" src="" alt="Intestazione" class="w-full h-full object-cover">
+                <img id="header-image" src="" alt="Nagłówek" class="w-full h-full object-cover">
                 <button id="upload-header-btn" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
                     <span class="ml-2">Cambia foto</span>
@@ -488,10 +488,7 @@
             }
 
             async function speak(text, lang = 'it-IT', rate = 1.0, onEndCallback) {
-                if (!text) {
-                    if(onEndCallback) onEndCallback();
-                    return;
-                }
+                if (!text) return;
                 
                 if (currentAudio && !currentAudio.paused) {
                     currentAudio.pause();
@@ -789,25 +786,20 @@
 
             function showSummary() {
                 learningState.classList.add('hidden');
-                testState.classList.add('hidden');
-                testSummaryState.classList.add('hidden');
                 summaryState.classList.remove('hidden');
             }
 
             function startSession(reviewWords = null) {
-                learningState.classList.remove('hidden');
-                testState.classList.add('hidden');
-                testSummaryState.classList.add('hidden');
-                summaryState.classList.add('hidden');
-
                 if (!activeDeckId) {
                     learningState.classList.add('hidden');
+                    summaryState.classList.add('hidden');
                     loadingState.innerHTML = '<p class="text-center text-slate-500 p-8">Selecciona o crea una base de datos para empezar a aprender.</p>';
                     loadingState.classList.remove('hidden');
                     return;
                 }
                  loadingState.classList.add('hidden');
-                
+                summaryState.classList.add('hidden');
+                learningState.classList.remove('hidden');
                 buildQueues(reviewWords);
                 if (reviewQueue.length === 0 && newQueue.length === 0) {
                     showSummary();
@@ -928,13 +920,16 @@
             });
             addStoryBtn.addEventListener('click', () => storyUploadInput.click());
             
-  let storySentences = [];
+            let storySentences = [];
             let currentSentenceIndex = 0;
-            let isStoryPlaying = false;
 
             function playNextSentence() {
-                if (!isStoryPlaying || currentSentenceIndex >= storySentences.length) {
-                    isStoryPlaying = false;
+                if (!synth.speaking && !currentAudio) { // If manually stopped, exit loop
+                     listenFullStoryBtn.querySelector('.play-icon').classList.remove('hidden');
+                     listenFullStoryBtn.querySelector('.stop-icon').classList.add('hidden');
+                     return;
+                }
+                if (currentSentenceIndex >= storySentences.length) {
                     listenFullStoryBtn.querySelector('.play-icon').classList.remove('hidden');
                     listenFullStoryBtn.querySelector('.stop-icon').classList.add('hidden');
                     return;
@@ -954,17 +949,17 @@
             listenFullStoryBtn.addEventListener('click', () => {
                 const playIcon = listenFullStoryBtn.querySelector('.play-icon');
                 const stopIcon = listenFullStoryBtn.querySelector('.stop-icon');
-
-                if(isStoryPlaying) {
-                    isStoryPlaying = false;
-                    if (currentAudio) currentAudio.pause();
+                if(synth.speaking || (currentAudio && !currentAudio.paused)) {
                     synth.cancel();
+                    if(currentAudio) {
+                        currentAudio.pause();
+                        currentAudio = null;
+                    }
                     playIcon.classList.remove('hidden');
                     stopIcon.classList.add('hidden');
                 } else {
                     const text = storyViewerContent.textContent;
                     if(text) {
-                        isStoryPlaying = true;
                         storySentences = text.match(/[^.!?]+[.!?]+/g) || [text];
                         currentSentenceIndex = 0;
                         playIcon.classList.add('hidden');
