@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Ładowania Danych</title>
+    <script src="stories_baza.js"></script>
+</head>
+<body>
+    <h1>Plik testowy</h1>
+    <p>Otwórz konsolę deweloperską (F12), aby zobaczyć wynik testu.</p>
+
+    <script>
+        if (typeof initialStoryList !== 'undefined' && initialStoryList.length > 0) {
+            console.log(
+                '%c SUKCES! ', 
+                'background: #28a745; color: #ffffff; font-weight: bold; border-radius: 4px; padding: 4px;', 
+                'Plik stories_baza.js załadował się poprawnie, a zmienna initialStoryList istnieje i zawiera dane.'
+            );
+            console.log('Zawartość zmiennej:', initialStoryList);
+        } else {
+            console.error(
+                '%c BŁĄD! ', 
+                'background: #dc3545; color: #ffffff; font-weight: bold; border-radius: 4px; padding: 4px;', 
+                'Nie udało się załadować danych. Sprawdź, czy plik stories_baza.js na pewno istnieje w tym samym folderze i czy nie ma w nim błędów składni.'
+            );
+        }
+    </script>
+</body>
+</html>
