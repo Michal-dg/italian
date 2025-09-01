@@ -477,38 +477,7 @@
                 setTimeout(tryLoadVoices, 250); // Fallback
             }
 
-            async function speak(text, lang = 'it-IT', rate = 1.0, onEndCallback) {
-                if (!text) {
-                    if(onEndCallback) onEndCallback();
-                    return;
-                }
-                
-                if (currentAudio && !currentAudio.paused) {
-                    currentAudio.pause();
-                    currentAudio = null;
-                }
-                if(synth.speaking) synth.cancel();
-
-                // Fallback to browser's voice if API key is missing
-                if (!GOOGLE_API_KEY) {
-                    if (!speechReady) {
-                        ensureSpeechReady(() => speak(text, lang, rate, onEndCallback));
-                        return;
-                    }
-                    const utterThis = new SpeechSynthesisUtterance(text);
-                    const selectedVoice = italianVoices.find(v => v.lang === 'it-IT');
-                    utterThis.voice = selectedVoice;
-                    utterThis.rate = rate;
-                    utterThis.onend = () => {
-                        if (onEndCallback) onEndCallback();
-                    };
-                    synth.speak(utterThis);
-                    return;
-                }
-
-                // Google Cloud TTS
-                try {
-                    // TO JEST POPRAWNA, BEZPIECZNA WERSJA FUNKCJI SPEAK
+// TO JEST FINALNA, POPRAWNA WERSJA FUNKCJI SPEAK
 async function speak(text, lang = 'it-IT', rate = 1.0, onEndCallback) {
     if (!text) {
         if(onEndCallback) onEndCallback();
@@ -521,9 +490,6 @@ async function speak(text, lang = 'it-IT', rate = 1.0, onEndCallback) {
     }
     if(synth.speaking) synth.cancel();
 
-    // Kluczowy moment:
-    // Zamiast łączyć się bezpośrednio z Google,
-    // łączymy się z naszą bezpieczną funkcją na Netlify.
     try {
         const response = await fetch('/.netlify/functions/get-speech', {
             method: 'POST',
