@@ -98,6 +98,13 @@
             <button id="show-review-btn" title="Sessione di ripasso" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>
             </button>
+            <nav class="relative flex justify-center items-center ...">
+    <button id="show-auth-btn" title="Konto użytkownika" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+        <svg id="auth-icon-user" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+        <svg id="auth-icon-logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+    </button>
+
+    <button id="show-decks-btn" ...> </nav>
         </nav>
 
         <main id="main-content">
@@ -315,13 +322,44 @@
             </div>
         </div>
     </div>
-    
+    <div id="auth-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+    <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
+        <header class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold">Zaloguj się lub zarejestruj</h2>
+            <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+        </header>
+        <div class="p-6">
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label for="auth-email" class="block text-sm font-medium text-slate-700">Email</label>
+                    <input type="email" id="auth-email" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                </div>
+                <div>
+                    <label for="auth-password" class="block text-sm font-medium text-slate-700">Hasło</label>
+                    <input type="password" id="auth-password" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                </div>
+                <div id="auth-error-message" class="text-red-500 text-sm hidden"></div>
+                <div class="flex gap-4">
+                    <button id="login-btn" type="submit" class="flex-1 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zaloguj</button>
+                    <button id="register-btn" type="submit" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">Zarejestruj</button>
+                </div>
+            </form>
+            <div id="auth-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center">
+                <p>Wysłaliśmy link potwierdzający na Twój adres e-mail. Sprawdź swoją skrzynkę, aby dokończyć rejestrację.</p>
+            </div>
+             <div id="user-info" class="hidden mt-4 text-center">
+                <p>Zalogowano jako: <strong id="user-email-display"></strong></p>
+                <button id="logout-btn" class="mt-4 w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition-colors">Wyloguj</button>
+            </div>
+        </div>
+    </div>
+</div>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
 
     // --- ZMIANA: POPRAWIONA Inicjalizacja klienta Supabase ---
-const SUPABASE_URL = 'https://supabase.com/ Musteroh07italiano23'; // Wklej tutaj swój Project URL
-const SUPABASE_ANON_KEY = 'TeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbmV1anBscGRvcnV2cnZ6dnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4MDQ3NjYsImV4cCI6MjA3MjM4MDc2Nn0.YIJYmt8KeiXH0iFS_Pk6ErIkyKZpPDsi29G83VItjCc_KLUCZ_ANON_PUBLIC'; // Wklej tutaj swój klucz 'anon public'
+const SUPABASE_URL = 'https://elneujplpdoruvrvzvzd.supabase.co'; // Wklej tutaj swój Project URL
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbmV1anBscGRvcnV2cnZ6dnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4MDQ3NjYsImV4cCI6MjA3MjM4MDc2Nn0.YIJYmt8KeiXH0iFS_Pk6ErIkyKZpPDsi29G83VItjCc'; // Wklej tutaj swój klucz 'anon public'
 
 // Używamy globalnego obiektu 'supabase' z biblioteki CDN, aby stworzyć naszego klienta.
 // Zapisujemy go pod nową nazwą, np. 'supabaseClient', aby uniknąć konfliktu.
@@ -451,6 +489,19 @@ console.log('Klient Supabase został pomyślnie zainicjowany.');
             const deckDetailsWords = document.getElementById('deck-details-words');
             const openAddWordModalBtn = document.getElementById('open-add-word-modal-btn');
             const addWordDeckName = document.getElementById('add-word-deck-name');
+            // DODAJ PONIŻSZE NOWE ZMIENNE
+            const authModal = document.getElementById('auth-modal');
+            const showAuthBtn = document.getElementById('show-auth-btn');
+            const authForm = document.getElementById('auth-form');
+            const loginBtn = document.getElementById('login-btn');
+            const registerBtn = document.getElementById('register-btn');
+            const logoutBtn = document.getElementById('logout-btn');
+            const authErrorMessage = document.getElementById('auth-error-message');
+            const authSuccessMessage = document.getElementById('auth-success-message');
+            const userInfo = document.getElementById('user-info');
+            const userEmailDisplay = document.getElementById('user-email-display');
+            const authIconUser = document.getElementById('auth-icon-user');
+            const authIconLogout = document.getElementById('auth-icon-logout');
             
             // --- APP STATE ---
             let words = []; // all words from active deck
@@ -546,49 +597,59 @@ async function speak(text, lang = 'it-IT', rate = 1.0, onEndCallback) {
             }
 
             // --- DECK MANAGEMENT ---
-            async function renderDecksList() {
-                const store = getTransaction('decks');
-                const decks = await idbRequest(store.getAll());
-                const wordStore = getTransaction('words');
-                const index = wordStore.index('deckId');
+           // TO JEST NOWA, POPRAWNA WERSJA, KTÓRA POWINNA ZNALEŹĆ SIĘ W TWOIM KODZIE
+async function renderDecksList(decks) {
+    // Ta funkcja nie pobiera już danych, tylko je wyświetla.
+    // Potrzebujemy jednak nadal liczyć słówka, więc dostęp do DB jest potrzebny.
+    const wordStore = getTransaction('words');
+    const index = wordStore.index('deckId');
 
-                decksListEl.innerHTML = '';
-                for (const deck of decks) {
-                    const count = await idbRequest(index.count(deck.id));
-                    const deckEl = document.createElement('div');
-                    deckEl.className = `flex justify-between items-center p-3 hover:bg-slate-100 rounded-lg cursor-pointer ${deck.id === activeDeckId ? 'bg-sky-100' : ''}`;
-                    deckEl.innerHTML = `
-                        <div class="deck-name-container grow pr-2">
-                            <p class="font-bold">${deck.name} <span class="font-normal text-slate-500 text-sm">(${count} parole)</span></p>
-                        </div>
-                        <div>
-                            <button class="edit-deck-btn text-slate-500 hover:text-sky-600 p-1">✏️</button>
-                            <button class="view-deck-btn text-slate-500 hover:text-sky-600 p-1">👁️</button>
-                            <button class="delete-deck-btn text-slate-500 hover:text-red-600 p-1">&times;</button>
-                        </div>
-                    `;
-                    deckEl.querySelector('.deck-name-container').addEventListener('click', async () => {
-                        await setActiveDeck(deck.id);
-                    });
-                    deckEl.querySelector('.edit-deck-btn').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const container = e.currentTarget.closest('.flex').querySelector('.deck-name-container');
-                        const p = container.querySelector('p');
-                        const currentName = p.textContent.split('(')[0].trim();
-                        container.innerHTML = `<input type="text" value="${currentName}" class="font-bold border rounded px-2 py-1 w-full">`;
-                        const input = container.querySelector('input');
-                        input.focus();
-                        input.addEventListener('blur', () => updateDeckName(deck, container, p.innerHTML));
-                        input.addEventListener('keydown', (e) => {
-                            if (e.key === 'Enter') { e.preventDefault(); updateDeckName(deck, container, p.innerHTML); }
-                            if (e.key === 'Escape') { container.innerHTML = p.innerHTML; }
-                        });
-                    });
-                    deckEl.querySelector('.view-deck-btn').addEventListener('click', () => showDeckDetails(deck));
-                    deckEl.querySelector('.delete-deck-btn').addEventListener('click', () => deleteDeck(deck));
-                    decksListEl.appendChild(deckEl);
-                }
-            }
+    decksListEl.innerHTML = '';
+    for (const deck of decks) {
+        // Ta linia pozostaje, bo liczy słówka z lokalnej bazy (na razie)
+        const count = await idbRequest(index.count(deck.id)); 
+        const deckEl = document.createElement('div');
+        deckEl.className = `flex justify-between items-center p-3 hover:bg-slate-100 rounded-lg cursor-pointer ${deck.id === activeDeckId ? 'bg-sky-100' : ''}`;
+        deckEl.innerHTML = `
+            <div class="deck-name-container grow pr-2">
+                <p class="font-bold">${deck.name} <span class="font-normal text-slate-500 text-sm">(${count} parole)</span></p>
+            </div>
+            <div>
+                <button class="edit-deck-btn text-slate-500 hover:text-sky-600 p-1">✏️</button>
+                <button class="view-deck-btn text-slate-500 hover:text-sky-600 p-1">👁️</button>
+                <button class="delete-deck-btn text-slate-500 hover:text-red-600 p-1">&times;</button>
+            </div>
+        `;
+        deckEl.querySelector('.deck-name-container').addEventListener('click', async () => {
+            await setActiveDeck(deck.id);
+        });
+        // TODO: W przyszłości musimy przepisać logikę edycji i usuwania, aby działała z Supabase
+        // deckEl.querySelector('.edit-deck-btn')...
+        // deckEl.querySelector('.view-deck-btn')...
+        // deckEl.querySelector('.delete-deck-btn')...
+        decksListEl.appendChild(deckEl);
+    }
+}
+
+// DODAJ TĘ NOWĄ FUNKCJĘ
+async function fetchAndRenderDecksForCurrentUser() {
+    console.log("Pobieranie talii dla zalogowanego użytkownika...");
+    const { data: { user } } = await supabaseClient.auth.getUser();
+
+    if (user) {
+        const { data: decks, error } = await supabaseClient // <-- Tutaj jest poprawka
+            .from('decks')
+            .select('*')
+            .eq('user_id', user.id);
+
+        if (error) {
+            console.error('Błąd podczas pobierania talii:', error);
+        } else {
+            console.log('Pobrano talie z Supabase:', decks);
+            await renderDecksList(decks);
+        }
+    }
+}
 
             async function updateDeckName(deck, container, oldHTML) {
                 const newName = container.querySelector('input').value.trim();
@@ -1298,22 +1359,71 @@ async function init(isReset = false) {
         await setActiveDeck(currentDeckId);
     });
 }
-            init();
+// --- ZMIANA: LOGIKA AUTENTYKACJI SUPABASE ---
+showAuthBtn.addEventListener('click', () => openModal(authModal));
+
+loginBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('auth-email').value;
+    const password = document.getElementById('auth-password').value;
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+
+    if (error) {
+        authErrorMessage.textContent = error.message;
+        authErrorMessage.classList.remove('hidden');
+    } else {
+        authForm.reset();
+        authErrorMessage.classList.add('hidden');
+        closeModal(authModal);
+    }
+});
+
+// NOWY, POPRAWNY BLOK onAuthStateChange
+            supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (session) {
+                    authIconUser.classList.add('hidden');
+                    authIconLogout.classList.remove('hidden');
+                    
+                    authForm.classList.add('hidden');
+                    authSuccessMessage.classList.add('hidden');
+                    userInfo.classList.remove('hidden');
+                    userEmailDisplay.textContent = session.user.email;
+                    
+                    console.log("Użytkownik zalogowany:", session.user.email);
+                    
+                    await fetchAndRenderDecksForCurrentUser();
+                    
+                } else {
+                    authIconUser.classList.remove('hidden');
+                    authIconLogout.classList.add('hidden');
+
+                    authForm.classList.remove('hidden');
+                    authSuccessMessage.classList.add('hidden');
+                    userInfo.classList.add('hidden');
+                    authForm.reset();
+                    
+                    console.log("Użytkownik wylogowany.");
+
+                    decksListEl.innerHTML = '<p class="text-center text-slate-500">Zaloguj się, aby zobaczyć swoje talie.</p>';
+                }
+            });
+            
+            init(); // Uruchomienie aplikacji
         });
     </script>
-<script>
-            // Rejestracja Service Workera
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/service-worker.js')
-                        .then(registration => {
-                            console.log('Service Worker zarejestrowany pomyślnie:', registration);
-                        })
-                        .catch(error => {
-                            console.log('Rejestracja Service Workera nie powiodła się:', error);
-                        });
-                });
-            }
-        </script>
-    </body>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => {
+                        console.log('Service Worker zarejestrowany pomyślnie:', registration);
+                    })
+                    .catch(error => {
+                        console.log('Rejestracja Service Workera nie powiodła się:', error);
+                    });
+            });
+        }
+    </script>
+</body>
 </html>
