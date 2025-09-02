@@ -1288,6 +1288,19 @@ async function init(isReset = false) {
             init();
         });
     </script>
-
-</body>
+<script>
+            // Rejestracja Service Workera
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/service-worker.js')
+                        .then(registration => {
+                            console.log('Service Worker zarejestrowany pomyślnie:', registration);
+                        })
+                        .catch(error => {
+                            console.log('Rejestracja Service Workera nie powiodła się:', error);
+                        });
+                });
+            }
+        </script>
+    </body>
 </html>
