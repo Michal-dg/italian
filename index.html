@@ -6,6 +6,7 @@
     <title>Parola Chiave: Domina l'Italiano</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script> ```
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
     <script src="slowka_baza_it.js"></script>
@@ -317,7 +318,19 @@
     
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
-            
+
+    // --- ZMIANA: POPRAWIONA Inicjalizacja klienta Supabase ---
+const SUPABASE_URL = 'https://supabase.com/ Musteroh07italiano23'; // Wklej tutaj swój Project URL
+const SUPABASE_ANON_KEY = 'TeyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbmV1anBscGRvcnV2cnZ6dnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4MDQ3NjYsImV4cCI6MjA3MjM4MDc2Nn0.YIJYmt8KeiXH0iFS_Pk6ErIkyKZpPDsi29G83VItjCc_KLUCZ_ANON_PUBLIC'; // Wklej tutaj swój klucz 'anon public'
+
+// Używamy globalnego obiektu 'supabase' z biblioteki CDN, aby stworzyć naszego klienta.
+// Zapisujemy go pod nową nazwą, np. 'supabaseClient', aby uniknąć konfliktu.
+const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+console.log('Klient Supabase został pomyślnie zainicjowany.');
+// --- Koniec ZMIANY ----
+
+          
             // --- KONFIGURACJA ---
             const GOOGLE_API_KEY = "AIzaSyD7PvVy1ODFVLoXVrZd0e-6I8EmaWnbDWw";
             
