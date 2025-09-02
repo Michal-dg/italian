@@ -1426,4 +1426,234 @@ loginBtn.addEventListener('click', async (e) => {
         }
     </script>
 </body>
-</html>
+</html><script>
+    document.addEventListener('DOMContentLoaded', async () => {
+        
+        // --- Inicjalizacja klienta Supabase ---
+        const SUPABASE_URL = 'https://elneujplpdoruvrvzvzd.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbmV1anBscGRvcnV2cnZ6dnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4MDQ3NjYsImV4cCI6MjA3MjM4MDc2Nn0.YIJYmt8KeiXH0iFS_Pk6ErIkyKZpPDsi29G83VItjCc';
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Klient Supabase został pomyślnie zainicjowany.');
+
+        // --- KONFIGURACJA ---
+        const GOOGLE_API_KEY = "AIzaSyD7PvVy1ODFVLoXVrZd0e-6I8EmaWnbDWw";
+        const NEW_WORDS_PER_DAY = 5;
+        
+        if (typeof initialWordList === 'undefined') {
+            document.getElementById('loading-state').innerHTML = '<p class="text-red-500 font-bold">Błąd: Nie można załadować bazy słówek.</p>';
+            return;
+        }
+
+        // --- ZMIENNE GLOBALNE I STANU ---
+        let db;
+        let words = [];
+        let newQueue = [];
+        let reviewQueue = [];
+        let currentCard = null;
+        let synth = window.speechSynthesis;
+        let italianVoices = [];
+        let speechReady = false;
+        let statsChart = null;
+        let globalFlashcardBg = null;
+        let activeDeckId = null;
+        let storySpeechRate = 1.0;
+        let currentAudio = null;
+        let testWords = [];
+        let currentTestQuestionIndex = 0;
+        let testScore = 0;
+
+        // --- SELEKTORY DOM ---
+        const loadingState = document.getElementById('loading-state');
+        const summaryState = document.getElementById('summary-state');
+        const learningState = document.getElementById('learning-state');
+        const testState = document.getElementById('test-state');
+        const testSummaryState = document.getElementById('test-summary-state');
+        const newCountEl = document.getElementById('new-count');
+        const reviewCountEl = document.getElementById('review-count');
+        const cardRankEl = document.getElementById('card-rank');
+        const cardItalianEl = document.getElementById('card-italian');
+        const cardPolishEl = document.getElementById('card-polish');
+        const cardExampleItEl = document.getElementById('card-example-it');
+        const cardExamplePlEl = document.getElementById('card-example-pl');
+        const cardImageEl = document.getElementById('card-image');
+        const showAnswerBtn = document.getElementById('show-answer-btn');
+        const difficultyButtons = document.getElementById('difficulty-buttons');
+        const flashcard = document.getElementById('flashcard');
+        const startNewSessionEarlyBtn = document.getElementById('start-new-session-early');
+        const resetProgressBtn = document.getElementById('reset-progress');
+        const speakBtnFront = document.getElementById('speak-btn-front');
+        const speakBtnBack = document.getElementById('speak-btn-back');
+        const learnedCountEl = document.getElementById('learned-count');
+        const addImageBtn = document.getElementById('add-image-btn');
+        const imageUploadInput = document.getElementById('image-upload-input');
+        const headerImageEl = document.getElementById('header-image');
+        const uploadHeaderBtn = document.getElementById('upload-header-btn');
+        const headerUploadInput = document.getElementById('header-upload-input');
+        const storyUploadInput = document.getElementById('story-upload-input');
+        const uploadGlobalBgBtn = document.getElementById('upload-global-bg-btn');
+        const globalBgUploadInput = document.getElementById('global-bg-upload-input');
+        const cardFrontBgEl = document.getElementById('card-front-bg');
+        const cardFrontOverlayEl = document.getElementById('card-front-overlay');
+        const activeDeckNameEl = document.getElementById('active-deck-name');
+        const storyBgUploadInput = document.getElementById('story-bg-upload-input');
+        const uploadStoryBgBtn = document.getElementById('upload-story-bg-btn');
+        const storyViewerBgContainer = document.getElementById('story-viewer-bg-container');
+        const speedSlider = document.getElementById('speed-slider');
+        const showDecksBtn = document.getElementById('show-decks-btn');
+        const showLearnedWordsBtn = document.getElementById('show-learned-words-btn');
+        const showStatsBtn = document.getElementById('show-stats-btn');
+        const showStoriesBtn = document.getElementById('show-stories-btn');
+        const showReviewBtn = document.getElementById('show-review-btn');
+        const decksModal = document.getElementById('decks-modal');
+        const learnedWordsModal = document.getElementById('learned-words-modal');
+        const statsModal = document.getElementById('stats-modal');
+        const storiesModal = document.getElementById('stories-modal');
+        const storyViewerModal = document.getElementById('story-viewer-modal');
+        const addWordModal = document.getElementById('add-word-modal');
+        const reviewModal = document.getElementById('review-modal');
+        const decksListEl = document.getElementById('decks-list');
+        const learnedWordsList = document.getElementById('learned-words-list');
+        const statsChartCanvas = document.getElementById('stats-chart');
+        const learnedWordsCountEl = document.getElementById('learned-words-count');
+        const storiesListEl = document.getElementById('stories-list');
+        const addStoryBtn = document.getElementById('add-story-btn');
+        const storyViewerTitle = document.getElementById('story-viewer-title');
+        const storyViewerContent = document.getElementById('story-viewer-content');
+        const listenFullStoryBtn = document.getElementById('listen-full-story-btn');
+        const addWordForm = document.getElementById('add-word-form');
+        const addDeckForm = document.getElementById('add-deck-form');
+        const deckDetailsView = document.getElementById('deck-details-view');
+        const deckDetailsName = document.getElementById('deck-details-name');
+        const deckDetailsWords = document.getElementById('deck-details-words');
+        const openAddWordModalBtn = document.getElementById('open-add-word-modal-btn');
+        const addWordDeckName = document.getElementById('add-word-deck-name');
+        const authModal = document.getElementById('auth-modal');
+        const showAuthBtn = document.getElementById('show-auth-btn');
+        const authForm = document.getElementById('auth-form');
+        const loginBtn = document.getElementById('login-btn');
+        const registerBtn = document.getElementById('register-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const authErrorMessage = document.getElementById('auth-error-message');
+        const authSuccessMessage = document.getElementById('auth-success-message');
+        const userInfo = document.getElementById('user-info');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        const authIconUser = document.getElementById('auth-icon-user');
+        const authIconLogout = document.getElementById('auth-icon-logout');
+        
+        // --- FUNKCJE ---
+        // (Wszystkie Twoje funkcje powinny być zdefiniowane tutaj)
+
+        function openModal(modal) { modal.classList.remove('pointer-events-none', 'opacity-0'); if (modal.querySelector('.modal-content')) modal.querySelector('.modal-content').classList.remove('scale-95'); }
+        function closeModal(modal) { modal.classList.add('pointer-events-none', 'opacity-0'); if (modal.querySelector('.modal-content')) modal.querySelector('.modal-content').classList.add('scale-95'); }
+        
+        async function speak(text, lang = 'it-IT', rate = 1.0, onEndCallback) {
+            if (!text) { if(onEndCallback) onEndCallback(); return; }
+            if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio = null; }
+            if(synth.speaking) synth.cancel();
+            try {
+                const response = await fetch('/.netlify/functions/get-speech', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text, lang, rate }) });
+                const data = await response.json();
+                if (response.ok && data.audioContent) {
+                    currentAudio = new Audio("data:audio/mp3;base64," + data.audioContent);
+                    currentAudio.play();
+                    currentAudio.onended = () => { if (onEndCallback) onEndCallback(); currentAudio = null; };
+                } else { console.error('Błąd odpowiedzi z funkcji serwerowej:', data); if (onEndCallback) onEndCallback(); }
+            } catch (error) { console.error('Błąd podczas łączenia z funkcją serwerową:', error); if (onEndCallback) onEndCallback(); }
+        }
+
+        async function renderDecksList(decks) {
+            decksListEl.innerHTML = '';
+            if (!decks || decks.length === 0) {
+                decksListEl.innerHTML = '<p class="text-center text-slate-500 p-4">Nie masz jeszcze żadnych talii. Stwórz nową, aby zacząć naukę.</p>';
+                return;
+            }
+            for (const deck of decks) {
+                const count = 0; // TODO: Zliczać słówka z Supabase
+                const deckEl = document.createElement('div');
+                deckEl.className = `flex justify-between items-center p-3 hover:bg-slate-100 rounded-lg cursor-pointer ${deck.id === activeDeckId ? 'bg-sky-100' : ''}`;
+                deckEl.innerHTML = `<div class="deck-name-container grow pr-2"><p class="font-bold">${deck.name} <span class="font-normal text-slate-500 text-sm">(${count} parole)</span></p></div><div><button>✏️</button><button>👁️</button><button>&times;</button></div>`;
+                deckEl.querySelector('.deck-name-container').addEventListener('click', async () => { /* TODO: setActiveDeck(deck.id); */ });
+                decksListEl.appendChild(deckEl);
+            }
+        }
+        
+        async function fetchAndRenderDecksForCurrentUser() {
+            console.log("Pobieranie talii dla zalogowanego użytkownika...");
+            const { data: { user } } = await supabaseClient.auth.getUser();
+            if (user) {
+                const { data: decks, error } = await supabaseClient.from('decks').select('*').eq('user_id', user.id);
+                if (error) { console.error('Błąd podczas pobierania talii:', error); } 
+                else { console.log('Pobrano talie z Supabase:', decks); await renderDecksList(decks); }
+            }
+        }
+
+        // --- INICJALIZACJA I NASŁUCHIWANIE ZDARZEŃ ---
+        
+        // (Tutaj wstaw wszystkie Twoje addEventListener'y: showDecksBtn, difficultyButtons, itd.)
+        // Poniżej umieszczam te najważniejsze, dotyczące autentykacji.
+
+        showAuthBtn.addEventListener('click', () => {
+            authForm.classList.remove('hidden');
+            authSuccessMessage.classList.add('hidden');
+            authErrorMessage.classList.add('hidden');
+            openModal(authModal);
+        });
+
+        loginBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            authErrorMessage.classList.add('hidden');
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+            if (error) {
+                authErrorMessage.textContent = error.message;
+                authErrorMessage.classList.remove('hidden');
+            } else {
+                authForm.reset();
+                closeModal(authModal);
+            }
+        });
+
+        registerBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            authErrorMessage.classList.add('hidden');
+            const email = document.getElementById('auth-email').value;
+            const password = document.getElementById('auth-password').value;
+            const { error } = await supabaseClient.auth.signUp({ email, password });
+            if (error) {
+                authErrorMessage.textContent = error.message;
+                authErrorMessage.classList.remove('hidden');
+            } else {
+                authForm.classList.add('hidden');
+                authSuccessMessage.classList.remove('hidden');
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            await supabaseClient.auth.signOut();
+            closeModal(authModal);
+        });
+
+        supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (session) {
+                authIconUser.classList.add('hidden');
+                authIconLogout.classList.remove('hidden');
+                userInfo.classList.remove('hidden');
+                userEmailDisplay.textContent = session.user.email;
+                console.log("Użytkownik zalogowany:", session.user.email);
+                await fetchAndRenderDecksForCurrentUser();
+            } else {
+                authIconUser.classList.remove('hidden');
+                authIconLogout.classList.add('hidden');
+                userInfo.classList.add('hidden');
+                authForm.classList.remove('hidden');
+                authSuccessMessage.classList.add('hidden');
+                authForm.reset();
+                console.log("Użytkownik wylogowany.");
+                decksListEl.innerHTML = '<p class="text-center text-slate-500 p-4">Zaloguj się, aby zobaczyć swoje talie.</p>';
+            }
+        });
+        
+        // init(); // Na razie wyłączamy, bo onAuthStateChange przejmuje kontrolę nad startem
+    });
+</script>
