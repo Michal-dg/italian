@@ -119,7 +119,6 @@ async function handlePasswordResetRequest(e) {
     }
 }
 
-// ❗️ OTO BRAKUJĄCA FUNKCJA, TERAZ POPRAWNIE DODANA I WYEKSPORTOWANA ❗️
 export async function handlePasswordUpdate(e) {
     e.preventDefault();
     const updatePasswordModal = document.getElementById('update-password-modal');
@@ -145,6 +144,9 @@ export async function handlePasswordUpdate(e) {
     } else {
         updatePasswordMessage.innerHTML = 'Hasło zostało pomyślnie zmienione! Możesz teraz zamknąć to okno i zalogować się ponownie.';
         updatePasswordMessage.className = 'text-sm text-green-600';
+        
+        // TA LINIA JEST KLUCZOWA I MUSI TU BYĆ
+        supabaseClient.auth.signOut();
     }
 }
 
