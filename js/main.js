@@ -1,41 +1,57 @@
 // js/main.js
-import { state, setDb, setActiveDeckId, setGlobalFlashcardBg } from './state.js';
-import { openDB, getAppData, setAppData, getTransaction } from './database.js';
+
+// Krok 1: Importujemy wszystkie potrzebne moduły i funkcje z całej aplikacji
+import { setDb, setActiveDeckId, setGlobalFlashcardBg } from './state.js';
+import { openDB, getAppData, getTransaction } from './database.js';
 import { elements } from './ui/domElements.js';
-import { initAuth } from './ui/auth.js';
-import { initModals } from './ui/modals.js';
-import { initDecks } from './ui/decks.js';
-import { initCards, startSession } from './ui/cards.js';
+import { initAuth, handlePasswordUpdate } from './ui/auth.js';
+import { initModals, openModal } from './ui/modals.js';
+import { initDecks, setActiveDeck } from './ui/decks.js';
+import { initCards } from './ui/cards.js';
 import { initStories } from './ui/stories.js';
 import { initStats } from './ui/stats.js';
 import { initReview } from './ui/review.js';
 import { ensureSpeechReady } from './api/tts.js';
+import { supabaseClient } from './api/supabase.js';
+import { getToday } from './utils.js';
 
+
+// Krok 2: Główna funkcja inicjalizująca aplikację
 async function initializeApp() {
+    // Nasłuchujemy zmian w stanie autentykacji (kluczowe dla resetu hasła)
+    supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'PASSWORD_RECOVERY') {
+            const updatePasswordModal = document.getElementById('update-password-modal');
+            const updatePasswordForm = document.getElementById('update-password-form');
+            openModal(updatePasswordModal);
+            // Dodajemy listener do formularza w nowym modalu
+            updatePasswordForm.addEventListener('submit', handlePasswordUpdate);
+        }
+    });
+
     try {
         const db = await openDB();
         setDb(db);
 
-        // Sprawdź, czy to pierwsze uruchomienie
+        // Sprawdzanie, czy to pierwsze uruchomienie i inicjalizacja domyślnych danych
         const decksStore = getTransaction(db, 'decks');
         const decks = await new Promise(res => decksStore.getAll().onsuccess = e => res(e.target.result));
-
         let currentDeckId;
 
         if (decks.length === 0) {
-            console.log("Pierwsze uruchomienie. Inicjalizacja domyślnej talii i słówek.");
+            console.log("Pierwsze uruchomienie: Inicjalizacja domyślnej talii i słówek.");
             const transaction = db.transaction(['decks', 'words'], 'readwrite');
-            const deckStore = transaction.objectStore('decks');
-            const wordStore = transaction.objectStore('words');
-
-            const addRequest = deckStore.add({ name: 'Podstawowe słówka' });
+            const deckStoreTx = transaction.objectStore('decks');
+            const wordStoreTx = transaction.objectStore('words');
+            
+            const addRequest = deckStoreTx.add({ name: 'Podstawowe słówka' });
             currentDeckId = await new Promise(res => addRequest.onsuccess = e => res(e.target.result));
-
+            
             if (typeof initialWordList !== 'undefined') {
                 initialWordList.forEach(word => {
-                    const wordData = { ...word, deckId: currentDeckId, interval: 0, nextReview: new Date().toISOString(), easeFactor: 2.5, isLearning: false, learnedDate: null };
+                    const wordData = { ...word, deckId: currentDeckId, interval: 0, nextReview: getToday().toISOString(), easeFactor: 2.5, isLearning: false, learnedDate: null };
                     delete wordData.id;
-                    wordStore.add(wordData);
+                    wordStoreTx.add(wordData);
                 });
             }
              await new Promise(res => transaction.oncomplete = res);
@@ -46,8 +62,16 @@ async function initializeApp() {
                 currentDeckId = decks[0].id;
             }
         }
+        
+        // Inicjalizacja domyślnych opowiadań, jeśli baza jest pusta
+        const storyStore = getTransaction(db, 'user_stories');
+        const storyCount = await new Promise(res => storyStore.count().onsuccess = e => res(e.target.result));
+        if (storyCount === 0 && typeof initialStoryList !== 'undefined' && initialStoryList.length > 0) {
+            const storyTx = db.transaction('user_stories', 'readwrite');
+            initialStoryList.forEach(story => storyTx.objectStore('user_stories').add(story));
+        }
 
-        // Załaduj ustawienia użytkownika
+        // Ładowanie ustawień użytkownika
         const savedHeader = await getAppData(db, 'headerImage');
         if (savedHeader) elements.headerImage.src = savedHeader;
 
@@ -57,7 +81,7 @@ async function initializeApp() {
             elements.cardFrontBg.src = savedGlobalBg;
         }
 
-        // Inicjalizuj wszystkie moduły UI
+        // Inicjalizacja wszystkich modułów UI
         initModals();
         initAuth();
         initCards();
@@ -66,14 +90,11 @@ async function initializeApp() {
         initStats();
         initReview();
 
-        // Przygotuj syntezator mowy i wystartuj sesję
+        // Przygotowanie syntezatora mowy i start sesji
         ensureSpeechReady(() => {
             elements.loadingState.classList.add('hidden');
-            setActiveDeckId(currentDeckId);
-            // Wywołujemy startSession z modułu Decks, który zaktualizuje UI i rozpocznie naukę
-            import('./ui/decks.js').then(module => {
-                module.setActiveDeck(currentDeckId, true); // `true` by nie zamykać modala
-            });
+            // Używamy funkcji z decks.js, aby poprawnie ustawić talię i wystartować sesję
+            setActiveDeck(currentDeckId, true); 
         });
 
     } catch (error) {
@@ -82,5 +103,5 @@ async function initializeApp() {
     }
 }
 
-// Uruchamiamy aplikację po załadowaniu całej strony
+// Krok 3: Uruchomienie aplikacji po załadowaniu strony
 document.addEventListener('DOMContentLoaded', initializeApp);

@@ -5,20 +5,24 @@ import { openModal, closeModal } from './modals.js';
 import { resetSessionUI } from './cards.js';
 import { setActiveDeckId, setWords, setQueues, setCurrentCard } from '../state.js';
 
-// Pobieramy elementy, których nie ma w `domElements`, bo są specyficzne dla tego modala
+// Pobieramy wszystkie potrzebne elementy z modala
 const resendConfirmBtn = document.getElementById('resend-confirm-btn');
 const forgotPasswordLink = document.getElementById('forgot-password-link');
+const resetPasswordForm = document.getElementById('reset-password-form');
+const backToLoginLink = document.getElementById('back-to-login-link');
+const authModalTitle = document.getElementById('auth-modal-title');
+
 
 function updateAuthUI(user) {
     if (user) {
-        // Użytkownik zalogowany: UKRYJ formularz, POKAŻ info o userze
+        // Użytkownik zalogowany
         elements.authForm.classList.add('hidden');
         elements.authSuccessMessage.classList.add('hidden');
         elements.userInfo.classList.remove('hidden');
         elements.userEmailDisplay.textContent = user.email;
         console.log("Użytkownik zalogowany:", user.email);
     } else {
-        // Użytkownik wylogowany: POKAŻ formularz, UKRYJ info o userze
+        // Użytkownik wylogowany
         elements.authForm.classList.remove('hidden');
         elements.authSuccessMessage.classList.add('hidden');
         elements.userInfo.classList.add('hidden');
@@ -98,21 +102,87 @@ async function handleLogout() {
     closeModal(elements.authModal);
 }
 
+async function handlePasswordResetRequest(e) {
+    e.preventDefault();
+    const email = document.getElementById('reset-email').value;
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin,
+    });
+
+    resetPasswordForm.classList.add('hidden');
+    elements.authSuccessMessage.classList.remove('hidden');
+    
+    if (error) {
+        elements.authSuccessMessage.innerHTML = `<p class="text-red-600">Błąd: ${error.message}</p>`;
+    } else {
+        elements.authSuccessMessage.innerHTML = '<p>Jeśli konto z tym adresem e-mail istnieje, wysłaliśmy na nie instrukcje resetowania hasła.</p>';
+    }
+}
+
+// ❗️ OTO BRAKUJĄCA FUNKCJA, TERAZ POPRAWNIE DODANA I WYEKSPORTOWANA ❗️
+export async function handlePasswordUpdate(e) {
+    e.preventDefault();
+    const updatePasswordModal = document.getElementById('update-password-modal');
+    const updatePasswordForm = document.getElementById('update-password-form');
+    const updatePasswordMessage = document.getElementById('update-password-message');
+    const newPassword = document.getElementById('new-password').value;
+
+    if (newPassword.length < 6) {
+        updatePasswordMessage.textContent = 'Hasło musi mieć co najmniej 6 znaków.';
+        updatePasswordMessage.className = 'text-sm text-red-500';
+        updatePasswordMessage.classList.remove('hidden');
+        return;
+    }
+
+    const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+
+    updatePasswordForm.classList.add('hidden');
+    updatePasswordMessage.classList.remove('hidden');
+
+    if (error) {
+        updatePasswordMessage.textContent = `Błąd: ${error.message}`;
+        updatePasswordMessage.className = 'text-sm text-red-500';
+    } else {
+        updatePasswordMessage.innerHTML = 'Hasło zostało pomyślnie zmienione! Możesz teraz zamknąć to okno i zalogować się ponownie.';
+        updatePasswordMessage.className = 'text-sm text-green-600';
+    }
+}
+
 export function initAuth() {
-    elements.showAuthBtn.addEventListener('click', async () => { // ZMIANA: dodano 'async'
-        const { data: { user } } = await supabaseClient.auth.getUser(); // ZMIANA: dodano 'await'
+    elements.showAuthBtn.addEventListener('click', async () => {
+        resetPasswordForm.classList.add('hidden');
+        elements.authSuccessMessage.classList.add('hidden');
+        elements.userInfo.classList.add('hidden');
+        elements.authForm.classList.remove('hidden');
+        authModalTitle.textContent = 'Zaloguj się lub zarejestruj';
+        resendConfirmBtn.classList.add('hidden');
+        elements.authErrorMessage.classList.add('hidden');
+
+        const { data: { user } } = await supabaseClient.auth.getUser();
         updateAuthUI(user);
         openModal(elements.authModal);
+    });
+    
+    forgotPasswordLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        elements.authForm.classList.add('hidden');
+        resetPasswordForm.classList.remove('hidden');
+        authModalTitle.textContent = 'Zresetuj hasło';
+    });
+
+    backToLoginLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        resetPasswordForm.classList.add('hidden');
+        elements.authForm.classList.remove('hidden');
+        authModalTitle.textContent = 'Zaloguj się lub zarejestruj';
     });
 
     elements.loginBtn.addEventListener('click', handleLogin);
     elements.registerBtn.addEventListener('click', handleRegister);
     elements.logoutBtn.addEventListener('click', handleLogout);
     resendConfirmBtn.addEventListener('click', handleResendConfirmation);
-    
-    // Na razie ukrywamy logikę resetowania hasła, aby nie komplikować
-    // forgotPasswordLink.addEventListener('click', handlePasswordResetRequest); 
-    
+    resetPasswordForm.addEventListener('submit', handlePasswordResetRequest);
+
     supabaseClient.auth.onAuthStateChange((event, session) => {
         updateAuthUI(session ? session.user : null);
     });
