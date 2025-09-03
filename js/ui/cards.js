@@ -205,6 +205,27 @@ export function initCards() {
             };
             reader.readAsDataURL(file);
         }
-        event.target.value = '';
+                event.target.value = '';
     });
+} // <-- ❗️ UPEWNIJ SIĘ, ŻE TEN NAWIAS ZAMYKA FUNKCJĘ initCards
+
+
+// ❗️ A TO JEST NOWA FUNKCJA, KTÓRA POWINNA BYĆ TUTAJ,
+// CAŁKOWICIE POZA I POD FUNKCJĄ initCards
+export function resetSessionUI() {
+    // Ukryj wszystkie aktywne stany
+    elements.learningState.classList.add('hidden');
+    elements.summaryState.classList.add('hidden');
+    elements.testState.classList.add('hidden');
+    elements.testSummaryState.classList.add('hidden');
+
+    // Wyzeruj liczniki w interfejsie
+    elements.newCount.textContent = '0';
+    elements.reviewCount.textContent = '0';
+    elements.learnedCount.textContent = '0';
+    elements.activeDeckName.textContent = 'Brak';
+
+    // Pokaż komunikat powitalny/instrukcję
+    elements.loadingState.innerHTML = '<p class="text-center text-slate-500 p-8">Zaloguj się i wybierz talię, aby rozpocząć naukę.</p>';
+    elements.loadingState.classList.remove('hidden');
 }

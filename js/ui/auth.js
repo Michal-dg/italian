@@ -2,6 +2,8 @@
 import { supabaseClient } from '../api/supabase.js';
 import { elements } from './domElements.js';
 import { openModal, closeModal } from './modals.js';
+import { resetSessionUI } from './cards.js';
+import { setActiveDeckId, setWords, setQueues, setCurrentCard } from '../state.js';
 
 function updateAuthUI(user) {
     if (user) {
@@ -22,7 +24,17 @@ function updateAuthUI(user) {
         elements.userInfo.classList.add('hidden');
         elements.authForm.reset();
         elements.decksList.innerHTML = '<p class="text-center text-slate-500 p-4">Zaloguj się, aby zobaczyć swoje talie.</p>';
-        console.log("Użytkownik wylogowany.");
+        
+        // Resetujemy stan w pamięci (w state.js)
+        setActiveDeckId(null);
+        setWords([]);
+        setQueues([], []);
+        setCurrentCard(null);
+
+        // Resetujemy interfejs użytkownika do stanu początkowego
+        resetSessionUI();
+
+        console.log("Użytkownik wylogowany. Stan aplikacji zresetowany.");
     }
 }
 
@@ -73,7 +85,5 @@ export function initAuth() {
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
         updateAuthUI(session ? session.user : null);
-        // Tutaj można dodać odświeżanie danych po zmianie stanu logowania,
-        // np. ponowne wczytanie talii.
     });
 }
