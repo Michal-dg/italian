@@ -75,7 +75,12 @@ async function handleLogout() {
 
 export function initAuth() {
     elements.showAuthBtn.addEventListener('click', () => {
+        // Resetuje wygląd modala przed jego otwarciem
+        elements.authForm.classList.remove('hidden');
+        elements.authSuccessMessage.classList.add('hidden');
         elements.authErrorMessage.classList.add('hidden');
+        elements.authForm.reset(); // Czyści wpisane dane
+
         openModal(elements.authModal);
     });
 
