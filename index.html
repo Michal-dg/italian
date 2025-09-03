@@ -297,37 +297,45 @@
         </div>
     </div>
     <div id="auth-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-xl font-bold">Zaloguj się lub zarejestruj</h2>
-                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <div class="p-6">
-                <form id="auth-form" class="space-y-4">
-    <div>
-        <label for="auth-email" class="block text-sm font-medium text-slate-700">Email</label>
-        <input type="email" name="email" id="auth-email" required class="mt-1 block w-full ..." autocomplete="username">
-    </div>
-    <div>
-        <label for="auth-password" class="block text-sm font-medium text-slate-700">Hasło</label>
-        <input type="password" name="password" id="auth-password" required class="mt-1 block w-full ..." autocomplete="current-password">
-    </div>
-                    <div id="auth-error-message" class="text-red-500 text-sm hidden"></div>
-                    <div class="flex gap-4">
-                        <button id="login-btn" type="submit" class="flex-1 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zaloguj</button>
-                        <button id="register-btn" type="submit" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">Zarejestruj</button>
-                    </div>
-                </form>
-                <div id="auth-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center">
-                    <p>Wysłaliśmy link potwierdzający na Twój adres e-mail. Sprawdź swoją skrzynkę, aby dokończyć rejestrację.</p>
+    <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
+        <header class="flex justify-between items-center p-4 border-b">
+            <h2 class="text-xl font-bold">Zaloguj się lub zarejestruj</h2>
+            <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+        </header>
+        <div class="p-6">
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label for="auth-email" class="block text-sm font-medium text-slate-700">Email</label>
+                    <input type="email" name="email" id="auth-email" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="username">
                 </div>
-                 <div id="user-info" class="hidden mt-4 text-center">
-                    <p>Zalogowano jako: <strong id="user-email-display"></strong></p>
-                    <button id="logout-btn" class="mt-4 w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition-colors">Wyloguj</button>
+                <div>
+                    <label for="auth-password" class="block text-sm font-medium text-slate-700">Hasło</label>
+                    <input type="password" name="password" id="auth-password" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="current-password">
                 </div>
+                <div id="auth-error-message" class="text-red-500 text-sm hidden"></div>
+                <button id="resend-confirm-btn" class="hidden w-full mt-2 text-sm text-sky-600 hover:underline">Wyślij e-mail z potwierdzeniem ponownie</button>
+                
+                <div class="text-right">
+                    <a href="#" id="forgot-password-link" class="text-sm text-sky-600 hover:underline">Zapomniałeś(aś) hasła?</a>
+                </div>
+
+                <div class="flex gap-4">
+                    <button id="login-btn" type="button" class="flex-1 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zaloguj</button>
+                    <button id="register-btn" type="button" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">Zarejestruj</button>
+                </div>
+            </form>
+
+            <div id="auth-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center">
+                <p>Wysłaliśmy link potwierdzający na Twój adres e-mail. Sprawdź swoją skrzynkę, aby dokończyć rejestrację.</p>
+            </div>
+
+            <div id="user-info" class="hidden mt-4 text-center">
+                <p>Zalogowano jako: <strong id="user-email-display"></strong></p>
+                <button id="logout-btn" class="mt-4 w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition-colors">Wyloguj</button>
             </div>
         </div>
     </div>
+</div>
 
     <script type="module" src="js/main.js"></script>
 
