@@ -1,461 +1,220 @@
 <!DOCTYPE html>
 <html lang="it">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-        <title>Parola Chiave: Domina l'Italiano</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script type="module">
-            import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
-            window.supabase = {
-                createClient
-            };
-        </script>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-        <link rel="manifest" href="manifest.json">
-        <meta name="theme-color" content="#0284c7">
-        <meta name="apple-mobile-web-app-capable" content="yes">
-        <meta name="mobile-web-app-capable" content="yes">
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-        <meta name="apple-mobile-web-app-title" content="Parola Chiave">
-        <link rel="apple-touch-icon" href="icons/icon-192x192.png">
-        <style>
-            body {
-                font-family: 'Inter', sans-serif;
-                overscroll-behavior-y: contain;
-            }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Parola Chiave: Domina l'Italiano</title>
 
-            .card {
-                transform-style: preserve-3d;
-                transition: transform 0.6s;
-            }
+    <!-- Zewnętrzne biblioteki i czcionki -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script type="module">
+      import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+      window.supabase = { createClient };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Konfiguracja PWA (Progressive Web App) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0284c7">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Parola Chiave">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
 
-            .card.is-flipped {
-                transform: rotateY(180deg);
-            }
+    <!-- Style CSS -->
+    <style>
+        body { font-family: 'Inter', sans-serif; overscroll-behavior-y: contain; }
+        .card { transform-style: preserve-3d; transition: transform 0.6s; }
+        .card.is-flipped { transform: rotateY(180deg); }
+        .card-face { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; -webkit-backface-visibility: hidden; transform: translateZ(0); }
+        .card-face-back { transform: rotateY(180deg) translateZ(1px); }
+        .btn-difficulty { transition: all 0.2s ease-in-out; }
+        .btn-difficulty:hover { transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .modal { transition: opacity 0.3s ease; }
+        .modal-content { transition: transform 0.3s ease; }
+        #header-image-container:hover #upload-header-btn,
+        .card-face-front:hover #upload-global-bg-btn { opacity: 1; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 flex items-center justify-center min-h-screen">
 
-            .card-face {
-                position: absolute;
-                width: 100%;
-                height: 100%;
-                backface-visibility: hidden;
-                -webkit-backface-visibility: hidden;
-                transform: translateZ(0);
-            }
+    <input type="file" id="image-upload-input" class="hidden" accept="image/*">
+    <input type="file" id="header-upload-input" class="hidden" accept="image/*">
+    <input type="file" id="story-upload-input" class="hidden" accept=".txt">
+    <input type="file" id="global-bg-upload-input" class="hidden" accept="image/*">
+    <input type="file" id="story-bg-upload-input" class="hidden" accept="image/*">
 
-            .card-face-back {
-                transform: rotateY(180deg) translateZ(1px);
-            }
+    <div id="app" class="w-full max-w-md mx-auto p-4 sm:p-6">
+        
+        <header class="text-center mb-4">
+            <div id="header-image-container" class="relative w-full aspect-[3.5/1] bg-slate-200 rounded-lg mb-4 overflow-hidden group">
+                <img id="header-image" src="images/default-header.jpg" alt="Intestazione" class="w-full h-full object-cover">
+                <button id="upload-header-btn" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    <span class="ml-2">Cambia foto</span>
+                </button>
+            </div>
+            <h1 class="text-3xl sm:text-4xl font-bold text-sky-600">Parola Chiave</h1>
+            <p class="text-slate-500 mt-1">Padroneggia l'italiano, parola per parola!</p>
+        </header>
 
-            .btn-difficulty {
-                transition: all 0.2s ease-in-out;
-            }
+        <nav class="relative flex justify-center items-center space-x-2 sm:space-x-4 mb-6 border-b pb-4">
+            <button id="show-decks-btn" title="Basi di dati" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path><path d="M20 12v4H4v-4"></path><path d="M4 8h16"></path></svg>
+            </button>
+            <button id="show-learned-words-btn" title="Parole imparate" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            </button>
+            <button id="show-stats-btn" title="Grafico dei progressi" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+            </button>
+            <button id="show-stories-btn" title="Biblioteca di storie" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            </button>
+            <button id="show-review-btn" title="Sessione di ripasso" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>
+            </button>
+            <button id="show-auth-btn" title="Konto użytkownika" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                <svg id="auth-icon-user" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <svg id="auth-icon-logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+            </button>
+        </nav>
 
-            .btn-difficulty:hover {
-                transform: translateY(-px);
-                box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-
-            .modal {
-                transition: opacity 0.3s ease;
-            }
-
-            .modal-content {
-                transition: transform 0.3s ease;
-            }
-
-            #header-image-container:hover #upload-header-btn, .card-face-front:hover #upload-global-bg-btn {
-                opacity: 1;
-            }
-        </style>
-    </head>
-    <body class="bg-slate-50 text-slate-800 flex items-center justify-center min-h-screen">
-        <input type="file" id="image-upload-input" class="hidden" accept="image/*">
-        <input type="file" id="header-upload-input" class="hidden" accept="image/*">
-        <input type="file" id="story-upload-input" class="hidden" accept=".txt">
-        <input type="file" id="global-bg-upload-input" class="hidden" accept="image/*">
-        <input type="file" id="story-bg-upload-input" class="hidden" accept="image/*">
-        <div id="app" class="w-full max-w-md mx-auto p-4 sm:p-6">
-            <header class="text-center mb-4">
-                <div id="header-image-container" class="relative w-full aspect-[3.5/1] bg-slate-200 rounded-lg mb-4 overflow-hidden group">
-                    <img id="header-image" src="images/default-header.jpg" alt="Intestazione" class="w-full h-full object-cover">
-                    <button id="upload-header-btn" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                            <polyline points="17 8 12 3 7 8"></polyline>
-                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                        </svg>
-                        <span class="ml-2">Cambia foto</span>
-                    </button>
+        <main id="main-content">
+            <div class="text-center mb-4"><p class="text-sm text-slate-500">Base attiva: <strong id="active-deck-name" class="text-sky-600"></strong></p></div>
+            <div id="loading-state" class="text-center p-8">
+                <p class="text-slate-500">Caricamento dell'applicazione...</p>
+            </div>
+            <div id="summary-state" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg">
+                <h2 class="text-2xl font-bold mb-4">¡Ottimo lavoro!</h2>
+                <p class="text-slate-600 mb-6">Hai completato la sessione di oggi. Torna domani per altre ripetizioni.</p>
+                <button id="start-new-session-early" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">
+                    Voglio continuare a imparare
+                </button>
+            </div>
+            <div id="learning-state" class="hidden">
+                <div class="flex justify-between items-center mb-4 text-sm">
+                    <div class="bg-sky-100 text-sky-700 font-semibold px-3 py-1 rounded-full">Nuove: <span id="new-count">0</span></div>
+                    <div id="learned-counter-container" class="flex items-center space-x-2 bg-green-100 text-green-700 font-bold px-3 py-1.5 rounded-full text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        <span><span id="learned-count">0</span></span>
+                    </div>
+                    <div class="bg-amber-100 text-amber-700 font-semibold px-3 py-1 rounded-full">Da ripassare: <span id="review-count">0</span></div>
                 </div>
-                <h1 class="text-3xl sm:text-4xl font-bold text-sky-600">Parola Chiave</h1>
-                <p class="text-slate-500 mt-1">Padroneggia l'italiano, parola per parola!</p>
+                <div id="flashcard-container" class="perspective-1000">
+                    <div id="flashcard" class="card w-full h-[320px] sm:h-[350px] relative">
+                        <div class="card-face card-face-front group flex flex-col items-center justify-center rounded-2xl shadow-lg p-6 text-center overflow-hidden">
+                            <img id="card-front-bg" src="images/default-card-bg.jpg" class="absolute inset-0 w-full h-full object-cover">
+                            <div id="card-front-overlay" class="absolute inset-0 bg-black/60 rounded-2xl"></div>
+                            <button id="upload-global-bg-btn" title="Cambia sfondo delle schede" class="absolute top-4 right-4 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition opacity-0 group-hover:opacity-100">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                            </button>
+                            <div class="relative z-10 flex flex-col items-center justify-between h-full w-full">
+                                <button id="speak-btn-front" class="self-start text-white hover:text-slate-200 transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                                </button>
+                                <div class="flex-grow flex flex-col items-center justify-center">
+                                    <p class="text-slate-200 text-sm mb-4">Parola <span id="card-rank">#1</span></p>
+                                    <p id="card-italian" class="text-4xl sm:text-5xl font-bold text-white"></p>
+                                </div>
+                                <button id="show-answer-btn" class="bg-white/20 text-white font-semibold py-2 px-6 rounded-lg hover:bg-white/40 transition-colors">
+                                    Mostra risposta
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-face card-face-back flex flex-col justify-between bg-sky-500 text-white rounded-2xl shadow-lg p-4 text-center">
+                            <div class="relative w-full h-32">
+                                <img id="card-image" src="" alt="Immagine di aiuto" class="w-full h-full object-cover rounded-lg bg-sky-400">
+                                <button id="add-image-btn" title="Aggiungi/Cambia immagine" class="absolute top-2 right-2 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                                </button>
+                            </div>
+                            <div class="flex-grow flex flex-col justify-center">
+                                <p id="card-polish" class="text-3xl sm:text-4xl font-bold mb-2"></p>
+                                <div class="text-sky-100 italic">
+                                    <p id="card-example-it" class="mb-1"></p>
+                                    <p id="card-example-pl" class="text-sm"></p>
+                                </div>
+                            </div>
+                            <button id="speak-btn-back" class="absolute top-4 left-4 text-sky-100 hover:text-white transition-colors">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div id="difficulty-buttons" class="hidden grid grid-cols-2 gap-3 mt-6">
+                    <button data-difficulty="1" class="btn-difficulty bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 text-3xl">👎</button>
+                    <button data-difficulty="3" class="btn-difficulty bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 text-3xl">👍</button>
+                </div>
+            </div>
+        </main>
+
+        <footer class="text-center mt-6">
+            <button id="reset-progress" class="text-xs text-slate-400 hover:text-red-500 hover:underline">Reiniciar progreso</button>
+        </footer>
+    </div>
+
+    <!-- Modale -->
+    <div id="decks-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
+            <header class="flex justify-between items-center p-4 border-b">
+                <h2 class="text-xl font-bold">Basi di Dati</h2>
+                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
             </header>
-            <nav class="relative flex justify-center items-center space-x-2 sm:space-x-4 mb-6 border-b pb-4">
-                <button id="show-decks-btn" title="Basi di dati" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 16V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path>
-                        <path d="M20 12v4H4v-4"></path>
-                        <path d="M4 8h16"></path>
-                    </svg>
-                </button>
-                <button id="show-learned-words-btn" title="Parole imparate" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="m9 11 3 3L22 4"></path>
-                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
-                    </svg>
-                </button>
-                <button id="show-stats-btn" title="Grafico dei progressi" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="20" x2="18" y2="10"></line>
-                        <line x1="12" y1="20" x2="12" y2="4"></line>
-                        <line x1="6" y1="20" x2="6" y2="14"></line>
-                    </svg>
-                </button>
-                <button id="show-stories-btn" title="Biblioteca di storie" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
-                    </svg>
-                </button>
-                <button id="show-review-btn" title="Sessione di ripasso" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M3 2v6h6"/>
-                        <path d="M21 12A9 9 0 0 0 6 5.3L3 8"/>
-                        <path d="M21 22v-6h-6"/>
-                        <path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/>
-                    </svg>
-                </button>
-                <button id="show-auth-btn" title="Konto użytkownika" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                    <svg id="auth-icon-user" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="12" cy="7" r="4"></circle>
-                    </svg>
-                    <svg id="auth-icon-logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                </button>
-            </nav>
-            <main id="main-content">
-                <div class="text-center mb-4">
-                    <p class="text-sm text-slate-500">
-                        Base attiva: <strong id="active-deck-name" class="text-sky-600"></strong>
-                    </p>
-                </div>
-                <div id="loading-state" class="text-center p-8">
-                    <p class="text-slate-500">Caricamento dell'applicazione...</p>
-                </div>
-                <div id="summary-state" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-bold mb-4">¡Ottimo lavoro!</h2>
-                    <p class="text-slate-600 mb-6">Hai completato la sessione di oggi. Torna domani per altre ripetizioni.</p>
-                    <button id="start-new-session-early" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Voglio continuare a imparare
-                </button>
-                </div>
-                <div id="learning-state" class="hidden">
-                    <div class="flex justify-between items-center mb-4 text-sm">
-                        <div class="bg-sky-100 text-sky-700 font-semibold px-3 py-1 rounded-full">
-                            Nuove: <span id="new-count">0</span>
-                        </div>
-                        <div id="learned-counter-container" class="flex items-center space-x-2 bg-green-100 text-green-700 font-bold px-3 py-1.5 rounded-full text-sm">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="20 6 9 17 4 12"></polyline>
-                            </svg>
-                            <span>
-                                <span id="learned-count">0</span>
-                            </span>
-                        </div>
-                        <div class="bg-amber-100 text-amber-700 font-semibold px-3 py-1 rounded-full">
-                            Da ripassare: <span id="review-count">0</span>
-                        </div>
-                    </div>
-                    <div id="flashcard-container" class="perspective-1000">
-                        <div id="flashcard" class="card w-full h-[320px] sm:h-[350px] relative">
-                            <div class="card-face card-face-front group flex flex-col items-center justify-center rounded-2xl shadow-lg p-6 text-center overflow-hidden">
-                                <img id="card-front-bg" src="images/default-card-bg.jpg" class="absolute inset-0 w-full h-full object-cover">
-                                <div id="card-front-overlay" class="absolute inset-0 bg-black/60 rounded-2xl"></div>
-                                <button id="upload-global-bg-btn" title="Cambia sfondo delle schede" class="absolute top-4 right-4 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition opacity-0 group-hover:opacity-100">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="17 8 12 3 7 8"></polyline>
-                                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                                    </svg>
-                                </button>
-                                <div class="relative z-10 flex flex-col items-center justify-between h-full w-full">
-                                    <button id="speak-btn-front" class="self-start text-white hover:text-slate-200 transition-colors">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                        </svg>
-                                    </button>
-                                    <div class="flex-grow flex flex-col items-center justify-center">
-                                        <p class="text-slate-200 text-sm mb-4">
-                                            Parola <span id="card-rank">#1</span>
-                                        </p>
-                                        <p id="card-italian" class="text-4xl sm:text-5xl font-bold text-white"></p>
-                                    </div>
-                                    <button id="show-answer-btn" class="bg-white/20 text-white font-semibold py-2 px-6 rounded-lg hover:bg-white/40 transition-colors">Mostra risposta
-                                </button>
-                                </div>
-                            </div>
-                            <div class="card-face card-face-back flex flex-col justify-between bg-sky-500 text-white rounded-2xl shadow-lg p-4 text-center">
-                                <div class="relative w-full h-32">
-                                    <img id="card-image" src="" alt="Immagine di aiuto" class="w-full h-full object-cover rounded-lg bg-sky-400">
-                                    <button id="add-image-btn" title="Aggiungi/Cambia immagine" class="absolute top-2 right-2 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                            <polyline points="17 8 12 3 7 8"></polyline>
-                                            <line x1="12" y1="3" x2="12" y2="15"></line>
-                                        </svg>
-                                    </button>
-                                </div>
-                                <div class="flex-grow flex flex-col justify-center">
-                                    <p id="card-polish" class="text-3xl sm:text-4xl font-bold mb-2"></p>
-                                    <div class="text-sky-100 italic">
-                                        <p id="card-example-it" class="mb-1"></p>
-                                        <p id="card-example-pl" class="text-sm"></p>
-                                    </div>
-                                </div>
-                                <button id="speak-btn-back" class="absolute top-4 left-4 text-sky-100 hover:text-white transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="difficulty-buttons" class="hidden grid grid-cols-2 gap-3 mt-6">
-                        <button data-difficulty="1" class="btn-difficulty bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 text-3xl">👎</button>
-                        <button data-difficulty="3" class="btn-difficulty bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 text-3xl">👍</button>
-                    </div>
-                </div>
-                <div id="test-state" class="hidden">
-                    <div class="bg-white p-6 rounded-2xl shadow-lg">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-xl font-bold">Test</h2>
-                            <p class="text-slate-500">
-                                <span id="test-current-question">1</span>
-                                / <span id="test-total-questions">10</span>
-                            </p>
-                        </div>
-                        <p id="test-question" class="text-3xl font-bold text-center mb-6 h-16"></p>
-                        <div id="test-answers" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
-                        <button id="test-next-btn" class="hidden w-full mt-6 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600">Prossima domanda</button>
-                    </div>
-                </div>
-                <div id="test-summary-state" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg">
-                    <h2 class="text-2xl font-bold mb-4">Risultati del Test</h2>
-                    <p class="text-slate-600 mb-6 text-4xl">
-                        <span id="test-score">0</span>
-                        / <span id="test-summary-total">0</span>
-                    </p>
-                    <button id="back-to-main-menu-btn" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Torna al menu principale
-                </button>
-                </div>
-            </main>
-            <footer class="text-center mt-6">
-                <button id="reset-progress" class="text-xs text-slate-400 hover:text-red-500 hover:underline">Reiniciar progreso</button>
-            </footer>
-        </div>
-        <div id="decks-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-                <header class="flex justify-between items-center p-4 border-b">
-                    <h2 class="text-xl font-bold">Basi di Dati</h2>
-                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-                </header>
-                <div id="decks-list" class="p-4 overflow-y-auto"></div>
-                <div class="p-4 border-t">
-                    <form id="add-deck-form" class="flex gap-2">
-                        <input type="text" id="new-deck-name" placeholder="Nome della nuova base..." class="flex-grow block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" required>
-                        <button type="submit" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors text-sm">Creare</button>
-                    </form>
-                </div>
-                <div id="deck-details-view" class="p-4 border-t hidden">
-                    <h3 class="font-bold mb-2">
-                        Parole nella base: <span id="deck-details-name" class="text-sky-600"></span>
-                    </h3>
-                    <div id="deck-details-words" class="max-h-48 overflow-y-auto border rounded-lg p-2 bg-slate-50"></div>
-                    <button id="open-add-word-modal-btn" class="w-full mt-4 bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors text-sm">Aggiungi parole a questa base</button>
-                </div>
-            </div>
-        </div>
-        <div id="learned-words-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-                <header class="flex justify-between items-center p-4 border-b">
-                    <h2 class="text-xl font-bold">
-                        Parole imparate (<span id="learned-words-count">0</span>
-                        )
-                    </h2>
-                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-                </header>
-                <div id="learned-words-list" class="p-4 overflow-y-auto"></div>
-            </div>
-        </div>
-        <div id="stats-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-                <header class="flex justify-between items-center p-4 border-b">
-                    <h2 class="text-xl font-bold">Progresso dell'apprendimento</h2>
-                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-                </header>
-                <div class="p-4">
-                    <canvas id="stats-chart"></canvas>
-                </div>
-            </div>
-        </div>
-        <div id="stories-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-                <header class="flex justify-between items-center p-4 border-b">
-                    <h2 class="text-xl font-bold">Biblioteca di Storie</h2>
-                    <button id="add-story-btn" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors text-sm">Aggiungi nuova</button>
-                </header>
-                <div id="stories-list" class="p-4 overflow-y-auto flex-grow"></div>
-                <footer class="p-2 border-t">
-                    <button class="close-modal-btn w-full text-slate-500 hover:text-slate-800 p-2">Chiudi</button>
-                </footer>
-            </div>
-        </div>
-        <div id="story-viewer-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div id="story-viewer-bg-container" class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95 bg-cover bg-center">
-                <header class="flex justify-between items-center p-4 border-b bg-white/70 backdrop-blur-none rounded-t-2xl">
-                    <h2 id="story-viewer-title" class="text-xl font-bold truncate">...</h2>
-                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-                </header>
-                <div id="story-viewer-content" class="p-6 overflow-y-auto flex-grow leading-relaxed bg-white/70 text-slate-900 backdrop-blur-none"></div>
-                <footer class="p-4 border-t flex justify-between items-center bg-white/70 backdrop-blur-none rounded-b-2xl">
-                    <div class="flex items-center space-x-2">
-                        <button id="upload-story-bg-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 transition-colors text-sm">Sfondo</button>
-                    </div>
-                    <div class="flex items-center space-x-2">
-                        <label for="speed-slider" class="text-sm text-slate-600">Velocità:</label>
-                        <input type="range" id="speed-slider" min="0.5" max="1" value="1" step="0.05" class="w-24">
-                    </div>
-                    <button id="listen-full-story-btn" class="bg-sky-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors flex items-center space-x-2">
-                        <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
-                        </svg>
-                        <svg class="stop-icon hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <rect x="6" y="6" width="12" height="12"></rect>
-                        </svg>
-                    </button>
-                </footer>
-            </div>
-        </div>
-        <div id="add-word-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col transform scale-95">
-                <header class="flex justify-between items-center p-4 border-b">
-                    <h2 class="text-xl font-bold">
-                        Aggiungi parole alla base: <span id="add-word-deck-name" class="text-sky-600"></span>
-                    </h2>
-                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-                </header>
-                <form id="add-word-form" class="p-6 space-y-4">
-                    <div>
-                        <label for="bulk-words-input" class="block text-sm font-medium text-slate-700">Pega la lista di parole</label>
-                        <p class="text-xs text-slate-500 mb-2">
-                            Ogni parola in una nuova linea. Usa punto e coma (;) per separare le parti: <code class="bg-slate-100 p-1 rounded">italiano;polacco;frase in italiano;frase in polacco</code>
-                        </p>
-                        <textarea id="bulk-words-input" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 h-48" placeholder="di;z, od;Un bicchiere di vino.;Kieliszek wina.&#10;e;i;Pane e burro.;Chleb i masło."></textarea>
-                    </div>
-                    <button type="submit" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Salva parole</button>
+            <div id="decks-list" class="p-4 overflow-y-auto"></div>
+            <div class="p-4 border-t">
+                <form id="add-deck-form" class="flex gap-2">
+                    <input type="text" id="new-deck-name" placeholder="Nome della nuova base..." class="flex-grow block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" required>
+                    <button type="submit" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors text-sm">Creare</button>
                 </form>
             </div>
         </div>
-        <div id="review-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col transform scale-95">
-                <header class="flex justify-between items-center p-4 border-b">
-                    <h2 class="text-xl font-bold">Sessione di Ripasso</h2>
-                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-                </header>
-                <div class="p-6 space-y-4">
-                    <div class="p-4 border rounded-lg">
-                        <h3 class="font-semibold mb-2">Ultime 20 parole imparate</h3>
-                        <div class="flex gap-2">
-                            <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="last" data-count="20">Studio Normale</button>
-                            <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="last" data-count="20">Test</button>
-                        </div>
-                    </div>
-                    <div class="p-4 border rounded-lg">
-                        <h3 class="font-semibold mb-2">Ultime 50 parole imparate</h3>
-                        <div class="flex gap-2">
-                            <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="last" data-count="50">Studio Normale</button>
-                            <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="last" data-count="50">Test</button>
-                        </div>
-                    </div>
-                    <div class="p-4 border rounded-lg">
-                        <h3 class="font-semibold mb-2">Parole imparate oggi</h3>
-                        <div class="flex gap-2">
-                            <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="today">Studio Normale</button>
-                            <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="today">Test</button>
-                        </div>
-                    </div>
+    </div>
+   
+   <div id="auth-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+    <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
+        <header class="flex justify-between items-center p-4 border-b">
+            <h2 id="auth-modal-title" class="text-xl font-bold">Zaloguj się lub zarejestruj</h2>
+            <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+        </header>
+        <div class="p-6">
+            <form id="auth-form" class="space-y-4">
+                <div>
+                    <label for="auth-email" class="block text-sm font-medium text-slate-700">Email</label>
+                    <input type="email" name="email" id="auth-email" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="username">
                 </div>
+                <div>
+                    <label for="auth-password" class="block text-sm font-medium text-slate-700">Hasło</label>
+                    <input type="password" name="password" id="auth-password" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="current-password">
+                </div>
+                <div id="auth-error-message" class="text-red-500 text-sm hidden"></div>
+                <div class="flex gap-4">
+                    <button id="login-btn" type="button" class="flex-1 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zaloguj</button>
+                    <button id="register-btn" type="button" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">Zarejestruj</button>
+                </div>
+            </form>
+
+            <div id="user-info" class="hidden mt-4 text-center">
+                <p>Zalogowano jako: <strong id="user-email-display"></strong></p>
+                <button id="logout-btn" class="mt-4 w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition-colors">Wyloguj</button>
             </div>
         </div>
-        <div id="auth-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
-                <header class="flex justify-between items-center p-4 border-b">
-                    <h2 id="auth-modal-title" class="text-xl font-bold">Zaloguj się lub zarejestruj</h2>
-                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-                </header>
-                <div class="p-6">
-                    <form id="auth-form" class="space-y-4">
-                        <div>
-                            <label for="auth-email" class="block text-sm font-medium text-slate-700">Email</label>
-                            <input type="email" name="email" id="auth-email" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="username">
-                        </div>
-                        <div>
-                            <label for="auth-password" class="block text-sm font-medium text-slate-700">Hasło</label>
-                            <input type="password" name="password" id="auth-password" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="current-password">
-                        </div>
-                        <div id="auth-error-message" class="text-red-500 text-sm hidden"></div>
-                        <button id="resend-confirm-btn" class="hidden w-full mt-2 text-sm text-sky-600 hover:underline">Wyślij e-mail z potwierdzeniem ponownie</button>
-                        <div class="text-right">
-                            <a href="#" id="forgot-password-link" class="text-sm text-sky-600 hover:underline">Zapomniałeś(aś) hasła?</a>
-                        </div>
-                        <div class="flex gap-4">
-                            <button id="login-btn" type="button" class="flex-1 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zaloguj</button>
-                            <button id="register-btn" type="button" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">Zarejestruj</button>
-                        </div>
-                    </form>
-                    <form id="reset-password-form" class="hidden space-y-4">
-                        <p class="text-sm text-slate-600">Podaj swój adres e-mail, a wyślemy Ci instrukcje, jak zresetować hasło.</p>
-                        <div>
-                            <label for="reset-email" class="block text-sm font-medium text-slate-700">Email</label>
-                            <input type="email" name="reset-email" id="reset-email" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm" autocomplete="email">
-                        </div>
-                        <button type="submit" id="send-reset-btn" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600">Wyślij instrukcje</button>
-                        <div class="text-center">
-                            <a href="#" id="back-to-login-link" class="text-sm text-slate-500 hover:underline">Wróć do logowania</a>
-                        </div>
-                    </form>
-                    <div id="auth-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center"></div>
-                    <div id="user-info" class="hidden mt-4 text-center">
-                        <p>
-                            Zalogowano jako: <strong id="user-email-display"></strong>
-                        </p>
-                        <button id="logout-btn" class="mt-4 w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition-colors">Wyloguj</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div id="update-password-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none" data-close-on-outside="false">
-            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
-                <header class="p-4 border-b">
-                    <h2 class="text-xl font-bold">Ustaw nowe hasło</h2>
-                </header>
-                <div class="p-6">
-                    <form id="update-password-form" class="space-y-4">
-                        <div>
-                            <label for="new-password" class="block text-sm font-medium text-slate-700">Nowe hasło</label>
-                            <input type="password" name="new-password" id="new-password" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
-                        </div>
-                        <div id="update-password-message" class="text-sm hidden"></div>
-                        <button id="update-password-btn" type="submit" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zapisz nowe hasło</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </body>
+    </div>
+</div>
+    
+    <script type="module" src="js/ui/main.js"></script>
+    
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(registration => console.log('Service Worker zarejestrowany:', registration))
+                    .catch(error => console.log('Rejestracja Service Workera nie powiodła się:', error));
+            });
+        }
+    </script>
+</body>
 </html>
+
