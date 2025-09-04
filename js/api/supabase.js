@@ -1,16 +1,39 @@
 // js/api/supabase.js
-
-// Importujemy funkcję createClient BEZPOŚREDNIO z CDN, a nie z obiektu window.
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-// Importujemy nasze klucze z pliku konfiguracyjnego
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
 
-// Dodajemy proste sprawdzenie, czy klucze zostały poprawnie wklejone w config.js
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY || SUPABASE_ANON_KEY === 'TWOJ_KLUCZ_ANON_SUPABASE') {
-    alert("BŁĄD: Klucze Supabase nie są poprawnie skonfigurowane w pliku js/config.js!");
-    console.error("BŁĄD: Klucze Supabase nie są poprawnie skonfigurowane w pliku js/config.js!");
+// Używamy globalnego obiektu 'supabase' zadeklarowanego w index.html
+const { createClient } = window.supabase;
+
+export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);// js/api/supabase.js
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config.js';
+const { createClient } = window.supabase;
+export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// -- Operacje na Danych --
+
+export async function fetchUserData() {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return { decks: [], words: [] };
+
+    const { data: decks, error: decksError } = await supabaseClient.from('decks').select('*').eq('user_id', user.id);
+    if (decksError) console.error('Błąd pobierania talii:', decksError);
+
+    const { data: words, error: wordsError } = await supabaseClient.from('words').select('*').eq('user_id', user.id);
+    if (wordsError) console.error('Błąd pobierania słówek:', wordsError);
+
+    return { decks: decks || [], words: words || [] };
 }
 
-// Tworzymy i eksportujemy klienta Supabase
-export const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+export async function addDeck(name) {
+    const { data: { user } } = await supabaseClient.auth.getUser();
+    if (!user) return null;
+    const { data, error } = await supabaseClient.from('decks').insert([{ name, user_id: user.id }]).select();
+    if (error) { console.error('Błąd dodawania talii:', error); return null; }
+    return data[0];
+}
+
+export async function updateWordProgress(word) {
+    const { id, italian, polish, example_it, example_pl, deck_id, user_id, ...progressData } = word;
+    const { error } = await supabaseClient.from('words').update(progressData).eq('id', id);
+    if (error) console.error("Błąd aktualizacji słówka:", error);
+}

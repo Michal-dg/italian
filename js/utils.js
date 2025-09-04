@@ -10,5 +10,3 @@ export const addDays = (date, days) => {
     result.setDate(result.getDate() + days);
     return result;
 };
-
-export const formatDate = (date) => date.toLocaleDateString('pl-PL');

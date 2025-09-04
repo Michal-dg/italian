@@ -1,1018 +1,461 @@
 <!DOCTYPE html>
 <html lang="it">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Parola Chiave: Domina l'Italiano</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    
-    <script src="slowka_baza_it.js"></script>
-    <script src="stories_baza.js"></script>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#0284c7">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Parola Chiave">
-    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+        <title>Parola Chiave: Domina l'Italiano</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script type="module">
+            import {createClient} from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm";
+            window.supabase = {
+                createClient
+            };
+        </script>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <link rel="manifest" href="manifest.json">
+        <meta name="theme-color" content="#0284c7">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="Parola Chiave">
+        <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+        <style>
+            body {
+                font-family: 'Inter', sans-serif;
+                overscroll-behavior-y: contain;
+            }
 
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            overscroll-behavior-y: contain; /* Prevent pull-to-refresh */
-        }
-        .card {
-            transform-style: preserve-3d;
-            transition: transform 0.6s;
-        }
-        .card.is-flipped {
-            transform: rotateY(180deg);
-        }
-        .card-face {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
-            transform: translateZ(0);
-        }
-        .card-face-back {
-            transform: rotateY(180deg) translateZ(1px);
-        }
-        .btn-difficulty {
-            transition: all 0.2s ease-in-out;
-        }
-        .btn-difficulty:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        .modal {
-            transition: opacity 0.3s ease;
-        }
-        .modal-content {
-            transition: transform 0.3s ease;
-        }
-        #header-image-container:hover #upload-header-btn,
-        .card-face-front:hover #upload-global-bg-btn {
-            opacity: 1;
-        }
-    </style>
-</head>
-<body class="bg-slate-50 text-slate-800 flex items-center justify-center min-h-screen">
-    <input type="file" id="image-upload-input" class="hidden" accept="image/*">
-    <input type="file" id="header-upload-input" class="hidden" accept="image/*">
-    <input type="file" id="story-upload-input" class="hidden" accept=".txt">
-    <input type="file" id="global-bg-upload-input" class="hidden" accept="image/*">
-    <input type="file" id="story-bg-upload-input" class="hidden" accept="image/*">
+            .card {
+                transform-style: preserve-3d;
+                transition: transform 0.6s;
+            }
 
-    <div id="app" class="w-full max-w-md mx-auto p-4 sm:p-6">
-        <header class="text-center mb-4">
-            <div id="header-image-container" class="relative w-full aspect-[3.5/1] bg-slate-200 rounded-lg mb-4 overflow-hidden group">
-                <img id="header-image" src="images/default-header.jpg" alt="Intestazione" class="w-full h-full object-cover">
-                <button id="upload-header-btn" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    <span class="ml-2">Cambia foto</span>
-                </button>
-            </div>
-            <h1 class="text-3xl sm:text-4xl font-bold text-sky-600">Parola Chiave</h1>
-            <p class="text-slate-500 mt-1">Padroneggia l'italiano, parola per parola!</p>
-        </header>
+            .card.is-flipped {
+                transform: rotateY(180deg);
+            }
 
-        <nav class="relative flex justify-center items-center space-x-2 sm:space-x-4 mb-6 border-b pb-4">
-            <button id="show-decks-btn" title="Basi di dati" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 16V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path><path d="M20 12v4H4v-4"></path><path d="M4 8h16"></path></svg>
-            </button>
-            <button id="show-learned-words-btn" title="Parole imparate" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 11 3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
-            </button>
-            <button id="show-stats-btn" title="Grafico dei progressi" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
-            </button>
-            <button id="show-stories-btn" title="Biblioteca di storie" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-            </button>
-            <button id="show-review-btn" title="Sessione di ripasso" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v6h6"/><path d="M21 12A9 9 0 0 0 6 5.3L3 8"/><path d="M21 22v-6h-6"/><path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/></svg>
-            </button>
-            <button id="show-auth-btn" title="Konto użytkownika" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
-                <svg id="auth-icon-user" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                <svg id="auth-icon-logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
-            </button>
-        </nav>
+            .card-face {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                backface-visibility: hidden;
+                -webkit-backface-visibility: hidden;
+                transform: translateZ(0);
+            }
 
-        <main id="main-content">
-            <div class="text-center mb-4"><p class="text-sm text-slate-500">Base attiva: <strong id="active-deck-name" class="text-sky-600"></strong></p></div>
-            <div id="loading-state" class="text-center p-8">
-                <p class="text-slate-500">Caricamento dell'applicazione...</p>
-            </div>
-            <div id="summary-state" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-bold mb-4">¡Ottimo lavoro!</h2>
-                <p class="text-slate-600 mb-6">Hai completato la sessione di oggi. Torna domani per altre ripetizioni.</p>
-                <button id="start-new-session-early" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">
-                    Voglio continuare a imparare
-                </button>
-            </div>
-            <div id="learning-state" class="hidden">
-                <div class="flex justify-between items-center mb-4 text-sm">
-                    <div class="bg-sky-100 text-sky-700 font-semibold px-3 py-1 rounded-full">Nuove: <span id="new-count">0</span></div>
-                    <div id="learned-counter-container" class="flex items-center space-x-2 bg-green-100 text-green-700 font-bold px-3 py-1.5 rounded-full text-sm">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        <span><span id="learned-count">0</span></span>
-                    </div>
-                    <div class="bg-amber-100 text-amber-700 font-semibold px-3 py-1 rounded-full">Da ripassare: <span id="review-count">0</span></div>
+            .card-face-back {
+                transform: rotateY(180deg) translateZ(1px);
+            }
+
+            .btn-difficulty {
+                transition: all 0.2s ease-in-out;
+            }
+
+            .btn-difficulty:hover {
+                transform: translateY(-px);
+                box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+
+            .modal {
+                transition: opacity 0.3s ease;
+            }
+
+            .modal-content {
+                transition: transform 0.3s ease;
+            }
+
+            #header-image-container:hover #upload-header-btn, .card-face-front:hover #upload-global-bg-btn {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body class="bg-slate-50 text-slate-800 flex items-center justify-center min-h-screen">
+        <input type="file" id="image-upload-input" class="hidden" accept="image/*">
+        <input type="file" id="header-upload-input" class="hidden" accept="image/*">
+        <input type="file" id="story-upload-input" class="hidden" accept=".txt">
+        <input type="file" id="global-bg-upload-input" class="hidden" accept="image/*">
+        <input type="file" id="story-bg-upload-input" class="hidden" accept="image/*">
+        <div id="app" class="w-full max-w-md mx-auto p-4 sm:p-6">
+            <header class="text-center mb-4">
+                <div id="header-image-container" class="relative w-full aspect-[3.5/1] bg-slate-200 rounded-lg mb-4 overflow-hidden group">
+                    <img id="header-image" src="images/default-header.jpg" alt="Intestazione" class="w-full h-full object-cover">
+                    <button id="upload-header-btn" class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-50 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="17 8 12 3 7 8"></polyline>
+                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                        </svg>
+                        <span class="ml-2">Cambia foto</span>
+                    </button>
                 </div>
-                <div id="flashcard-container" class="perspective-1000">
-                    <div id="flashcard" class="card w-full h-[320px] sm:h-[350px] relative">
-                        <div class="card-face card-face-front group flex flex-col items-center justify-center rounded-2xl shadow-lg p-6 text-center overflow-hidden">
-                            <img id="card-front-bg" src="images/default-card-bg.jpg" class="absolute inset-0 w-full h-full object-cover">
-                            <div id="card-front-overlay" class="absolute inset-0 bg-black/60 rounded-2xl"></div>
-                            <button id="upload-global-bg-btn" title="Cambia sfondo delle schede" class="absolute top-4 right-4 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition opacity-0 group-hover:opacity-100">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                            </button>
-                            <div class="relative z-10 flex flex-col items-center justify-between h-full w-full">
-                                <button id="speak-btn-front" class="self-start text-white hover:text-slate-200 transition-colors">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                <h1 class="text-3xl sm:text-4xl font-bold text-sky-600">Parola Chiave</h1>
+                <p class="text-slate-500 mt-1">Padroneggia l'italiano, parola per parola!</p>
+            </header>
+            <nav class="relative flex justify-center items-center space-x-2 sm:space-x-4 mb-6 border-b pb-4">
+                <button id="show-decks-btn" title="Basi di dati" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 16V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"></path>
+                        <path d="M20 12v4H4v-4"></path>
+                        <path d="M4 8h16"></path>
+                    </svg>
+                </button>
+                <button id="show-learned-words-btn" title="Parole imparate" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m9 11 3 3L22 4"></path>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+                    </svg>
+                </button>
+                <button id="show-stats-btn" title="Grafico dei progressi" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="20" x2="18" y2="10"></line>
+                        <line x1="12" y1="20" x2="12" y2="4"></line>
+                        <line x1="6" y1="20" x2="6" y2="14"></line>
+                    </svg>
+                </button>
+                <button id="show-stories-btn" title="Biblioteca di storie" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                        <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                    </svg>
+                </button>
+                <button id="show-review-btn" title="Sessione di ripasso" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 2v6h6"/>
+                        <path d="M21 12A9 9 0 0 0 6 5.3L3 8"/>
+                        <path d="M21 22v-6h-6"/>
+                        <path d="M3 12a9 9 0 0 0 15 6.7l3-2.7"/>
+                    </svg>
+                </button>
+                <button id="show-auth-btn" title="Konto użytkownika" class="p-3 bg-slate-100 rounded-full text-slate-500 hover:bg-sky-100 hover:text-sky-600 transition-colors">
+                    <svg id="auth-icon-user" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <svg id="auth-icon-logout" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="hidden">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                </button>
+            </nav>
+            <main id="main-content">
+                <div class="text-center mb-4">
+                    <p class="text-sm text-slate-500">
+                        Base attiva: <strong id="active-deck-name" class="text-sky-600"></strong>
+                    </p>
+                </div>
+                <div id="loading-state" class="text-center p-8">
+                    <p class="text-slate-500">Caricamento dell'applicazione...</p>
+                </div>
+                <div id="summary-state" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">¡Ottimo lavoro!</h2>
+                    <p class="text-slate-600 mb-6">Hai completato la sessione di oggi. Torna domani per altre ripetizioni.</p>
+                    <button id="start-new-session-early" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Voglio continuare a imparare
+                </button>
+                </div>
+                <div id="learning-state" class="hidden">
+                    <div class="flex justify-between items-center mb-4 text-sm">
+                        <div class="bg-sky-100 text-sky-700 font-semibold px-3 py-1 rounded-full">
+                            Nuove: <span id="new-count">0</span>
+                        </div>
+                        <div id="learned-counter-container" class="flex items-center space-x-2 bg-green-100 text-green-700 font-bold px-3 py-1.5 rounded-full text-sm">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span>
+                                <span id="learned-count">0</span>
+                            </span>
+                        </div>
+                        <div class="bg-amber-100 text-amber-700 font-semibold px-3 py-1 rounded-full">
+                            Da ripassare: <span id="review-count">0</span>
+                        </div>
+                    </div>
+                    <div id="flashcard-container" class="perspective-1000">
+                        <div id="flashcard" class="card w-full h-[320px] sm:h-[350px] relative">
+                            <div class="card-face card-face-front group flex flex-col items-center justify-center rounded-2xl shadow-lg p-6 text-center overflow-hidden">
+                                <img id="card-front-bg" src="images/default-card-bg.jpg" class="absolute inset-0 w-full h-full object-cover">
+                                <div id="card-front-overlay" class="absolute inset-0 bg-black/60 rounded-2xl"></div>
+                                <button id="upload-global-bg-btn" title="Cambia sfondo delle schede" class="absolute top-4 right-4 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition opacity-0 group-hover:opacity-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
                                 </button>
-                                <div class="flex-grow flex flex-col items-center justify-center">
-                                    <p class="text-slate-200 text-sm mb-4">Parola <span id="card-rank">#1</span></p>
-                                    <p id="card-italian" class="text-4xl sm:text-5xl font-bold text-white"></p>
+                                <div class="relative z-10 flex flex-col items-center justify-between h-full w-full">
+                                    <button id="speak-btn-front" class="self-start text-white hover:text-slate-200 transition-colors">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                        </svg>
+                                    </button>
+                                    <div class="flex-grow flex flex-col items-center justify-center">
+                                        <p class="text-slate-200 text-sm mb-4">
+                                            Parola <span id="card-rank">#1</span>
+                                        </p>
+                                        <p id="card-italian" class="text-4xl sm:text-5xl font-bold text-white"></p>
+                                    </div>
+                                    <button id="show-answer-btn" class="bg-white/20 text-white font-semibold py-2 px-6 rounded-lg hover:bg-white/40 transition-colors">Mostra risposta
+                                </button>
                                 </div>
-                                <button id="show-answer-btn" class="bg-white/20 text-white font-semibold py-2 px-6 rounded-lg hover:bg-white/40 transition-colors">
-                                    Mostra risposta
+                            </div>
+                            <div class="card-face card-face-back flex flex-col justify-between bg-sky-500 text-white rounded-2xl shadow-lg p-4 text-center">
+                                <div class="relative w-full h-32">
+                                    <img id="card-image" src="" alt="Immagine di aiuto" class="w-full h-full object-cover rounded-lg bg-sky-400">
+                                    <button id="add-image-btn" title="Aggiungi/Cambia immagine" class="absolute top-2 right-2 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="17 8 12 3 7 8"></polyline>
+                                            <line x1="12" y1="3" x2="12" y2="15"></line>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <div class="flex-grow flex flex-col justify-center">
+                                    <p id="card-polish" class="text-3xl sm:text-4xl font-bold mb-2"></p>
+                                    <div class="text-sky-100 italic">
+                                        <p id="card-example-it" class="mb-1"></p>
+                                        <p id="card-example-pl" class="text-sm"></p>
+                                    </div>
+                                </div>
+                                <button id="speak-btn-back" class="absolute top-4 left-4 text-sky-100 hover:text-white transition-colors">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                                        <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                                    </svg>
                                 </button>
                             </div>
                         </div>
-                        <div class="card-face card-face-back flex flex-col justify-between bg-sky-500 text-white rounded-2xl shadow-lg p-4 text-center">
-                            <div class="relative w-full h-32">
-                                <img id="card-image" src="" alt="Immagine di aiuto" class="w-full h-full object-cover rounded-lg bg-sky-400">
-                                <button id="add-image-btn" title="Aggiungi/Cambia immagine" class="absolute top-2 right-2 p-2 bg-white/50 hover:bg-white/80 text-sky-800 rounded-full backdrop-blur-sm transition">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                                </button>
-                            </div>
-                            <div class="flex-grow flex flex-col justify-center">
-                                <p id="card-polish" class="text-3xl sm:text-4xl font-bold mb-2"></p>
-                                <div class="text-sky-100 italic">
-                                    <p id="card-example-it" class="mb-1"></p>
-                                    <p id="card-example-pl" class="text-sm"></p>
-                                </div>
-                            </div>
-                            <button id="speak-btn-back" class="absolute top-4 left-4 text-sky-100 hover:text-white transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
-                            </button>
+                    </div>
+                    <div id="difficulty-buttons" class="hidden grid grid-cols-2 gap-3 mt-6">
+                        <button data-difficulty="1" class="btn-difficulty bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 text-3xl">👎</button>
+                        <button data-difficulty="3" class="btn-difficulty bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 text-3xl">👍</button>
+                    </div>
+                </div>
+                <div id="test-state" class="hidden">
+                    <div class="bg-white p-6 rounded-2xl shadow-lg">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-xl font-bold">Test</h2>
+                            <p class="text-slate-500">
+                                <span id="test-current-question">1</span>
+                                / <span id="test-total-questions">10</span>
+                            </p>
+                        </div>
+                        <p id="test-question" class="text-3xl font-bold text-center mb-6 h-16"></p>
+                        <div id="test-answers" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
+                        <button id="test-next-btn" class="hidden w-full mt-6 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600">Prossima domanda</button>
+                    </div>
+                </div>
+                <div id="test-summary-state" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg">
+                    <h2 class="text-2xl font-bold mb-4">Risultati del Test</h2>
+                    <p class="text-slate-600 mb-6 text-4xl">
+                        <span id="test-score">0</span>
+                        / <span id="test-summary-total">0</span>
+                    </p>
+                    <button id="back-to-main-menu-btn" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Torna al menu principale
+                </button>
+                </div>
+            </main>
+            <footer class="text-center mt-6">
+                <button id="reset-progress" class="text-xs text-slate-400 hover:text-red-500 hover:underline">Reiniciar progreso</button>
+            </footer>
+        </div>
+        <div id="decks-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
+                <header class="flex justify-between items-center p-4 border-b">
+                    <h2 class="text-xl font-bold">Basi di Dati</h2>
+                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+                </header>
+                <div id="decks-list" class="p-4 overflow-y-auto"></div>
+                <div class="p-4 border-t">
+                    <form id="add-deck-form" class="flex gap-2">
+                        <input type="text" id="new-deck-name" placeholder="Nome della nuova base..." class="flex-grow block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" required>
+                        <button type="submit" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors text-sm">Creare</button>
+                    </form>
+                </div>
+                <div id="deck-details-view" class="p-4 border-t hidden">
+                    <h3 class="font-bold mb-2">
+                        Parole nella base: <span id="deck-details-name" class="text-sky-600"></span>
+                    </h3>
+                    <div id="deck-details-words" class="max-h-48 overflow-y-auto border rounded-lg p-2 bg-slate-50"></div>
+                    <button id="open-add-word-modal-btn" class="w-full mt-4 bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors text-sm">Aggiungi parole a questa base</button>
+                </div>
+            </div>
+        </div>
+        <div id="learned-words-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
+                <header class="flex justify-between items-center p-4 border-b">
+                    <h2 class="text-xl font-bold">
+                        Parole imparate (<span id="learned-words-count">0</span>
+                        )
+                    </h2>
+                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+                </header>
+                <div id="learned-words-list" class="p-4 overflow-y-auto"></div>
+            </div>
+        </div>
+        <div id="stats-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
+                <header class="flex justify-between items-center p-4 border-b">
+                    <h2 class="text-xl font-bold">Progresso dell'apprendimento</h2>
+                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+                </header>
+                <div class="p-4">
+                    <canvas id="stats-chart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div id="stories-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
+                <header class="flex justify-between items-center p-4 border-b">
+                    <h2 class="text-xl font-bold">Biblioteca di Storie</h2>
+                    <button id="add-story-btn" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors text-sm">Aggiungi nuova</button>
+                </header>
+                <div id="stories-list" class="p-4 overflow-y-auto flex-grow"></div>
+                <footer class="p-2 border-t">
+                    <button class="close-modal-btn w-full text-slate-500 hover:text-slate-800 p-2">Chiudi</button>
+                </footer>
+            </div>
+        </div>
+        <div id="story-viewer-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div id="story-viewer-bg-container" class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95 bg-cover bg-center">
+                <header class="flex justify-between items-center p-4 border-b bg-white/70 backdrop-blur-none rounded-t-2xl">
+                    <h2 id="story-viewer-title" class="text-xl font-bold truncate">...</h2>
+                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+                </header>
+                <div id="story-viewer-content" class="p-6 overflow-y-auto flex-grow leading-relaxed bg-white/70 text-slate-900 backdrop-blur-none"></div>
+                <footer class="p-4 border-t flex justify-between items-center bg-white/70 backdrop-blur-none rounded-b-2xl">
+                    <div class="flex items-center space-x-2">
+                        <button id="upload-story-bg-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 transition-colors text-sm">Sfondo</button>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <label for="speed-slider" class="text-sm text-slate-600">Velocità:</label>
+                        <input type="range" id="speed-slider" min="0.5" max="1" value="1" step="0.05" class="w-24">
+                    </div>
+                    <button id="listen-full-story-btn" class="bg-sky-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors flex items-center space-x-2">
+                        <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                        </svg>
+                        <svg class="stop-icon hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="6" y="6" width="12" height="12"></rect>
+                        </svg>
+                    </button>
+                </footer>
+            </div>
+        </div>
+        <div id="add-word-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col transform scale-95">
+                <header class="flex justify-between items-center p-4 border-b">
+                    <h2 class="text-xl font-bold">
+                        Aggiungi parole alla base: <span id="add-word-deck-name" class="text-sky-600"></span>
+                    </h2>
+                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+                </header>
+                <form id="add-word-form" class="p-6 space-y-4">
+                    <div>
+                        <label for="bulk-words-input" class="block text-sm font-medium text-slate-700">Pega la lista di parole</label>
+                        <p class="text-xs text-slate-500 mb-2">
+                            Ogni parola in una nuova linea. Usa punto e coma (;) per separare le parti: <code class="bg-slate-100 p-1 rounded">italiano;polacco;frase in italiano;frase in polacco</code>
+                        </p>
+                        <textarea id="bulk-words-input" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 h-48" placeholder="di;z, od;Un bicchiere di vino.;Kieliszek wina.&#10;e;i;Pane e burro.;Chleb i masło."></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Salva parole</button>
+                </form>
+            </div>
+        </div>
+        <div id="review-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col transform scale-95">
+                <header class="flex justify-between items-center p-4 border-b">
+                    <h2 class="text-xl font-bold">Sessione di Ripasso</h2>
+                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+                </header>
+                <div class="p-6 space-y-4">
+                    <div class="p-4 border rounded-lg">
+                        <h3 class="font-semibold mb-2">Ultime 20 parole imparate</h3>
+                        <div class="flex gap-2">
+                            <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="last" data-count="20">Studio Normale</button>
+                            <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="last" data-count="20">Test</button>
+                        </div>
+                    </div>
+                    <div class="p-4 border rounded-lg">
+                        <h3 class="font-semibold mb-2">Ultime 50 parole imparate</h3>
+                        <div class="flex gap-2">
+                            <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="last" data-count="50">Studio Normale</button>
+                            <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="last" data-count="50">Test</button>
+                        </div>
+                    </div>
+                    <div class="p-4 border rounded-lg">
+                        <h3 class="font-semibold mb-2">Parole imparate oggi</h3>
+                        <div class="flex gap-2">
+                            <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="today">Studio Normale</button>
+                            <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="today">Test</button>
                         </div>
                     </div>
                 </div>
-                <div id="difficulty-buttons" class="hidden grid grid-cols-2 gap-3 mt-6">
-                    <button data-difficulty="1" class="btn-difficulty bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 text-3xl">👎</button>
-                    <button data-difficulty="3" class="btn-difficulty bg-green-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-600 text-3xl">👍</button>
-                </div>
-            </div>
-            <div id="test-state" class="hidden">
-                <div class="bg-white p-6 rounded-2xl shadow-lg">
-                    <div class="flex justify-between items-center mb-4">
-                        <h2 class="text-xl font-bold">Test</h2>
-                        <p class="text-slate-500"><span id="test-current-question">1</span> / <span id="test-total-questions">10</span></p>
-                    </div>
-                    <p id="test-question" class="text-3xl font-bold text-center mb-6 h-16"></p>
-                    <div id="test-answers" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    </div>
-                    <button id="test-next-btn" class="hidden w-full mt-6 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600">Prossima domanda</button>
-                </div>
-            </div>
-            <div id="test-summary-state" class="hidden text-center bg-white p-8 rounded-2xl shadow-lg">
-                <h2 class="text-2xl font-bold mb-4">Risultati del Test</h2>
-                <p class="text-slate-600 mb-6 text-4xl"><span id="test-score">0</span> / <span id="test-summary-total">0</span></p>
-                <button id="back-to-main-menu-btn" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">
-                    Torna al menu principale
-                </button>
-            </div>
-        </main>
-        
-        <footer class="text-center mt-6">
-            <button id="reset-progress" class="text-xs text-slate-400 hover:text-red-500 hover:underline">Reiniciar progreso</button>
-        </footer>
-    </div>
-
-    <div id="decks-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-xl font-bold">Basi di Dati</h2>
-                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <div id="decks-list" class="p-4 overflow-y-auto"></div>
-            <div class="p-4 border-t">
-                <form id="add-deck-form" class="flex gap-2">
-                    <input type="text" id="new-deck-name" placeholder="Nome della nuova base..." class="flex-grow block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" required>
-                    <button type="submit" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors text-sm">Creare</button>
-                </form>
-            </div>
-            <div id="deck-details-view" class="p-4 border-t hidden">
-                <h3 class="font-bold mb-2">Parole nella base: <span id="deck-details-name" class="text-sky-600"></span></h3>
-                <div id="deck-details-words" class="max-h-48 overflow-y-auto border rounded-lg p-2 bg-slate-50"></div>
-                <button id="open-add-word-modal-btn" class="w-full mt-4 bg-green-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-600 transition-colors text-sm">Aggiungi parole a questa base</button>
             </div>
         </div>
-    </div>
-    <div id="learned-words-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-xl font-bold">Parole imparate (<span id="learned-words-count">0</span>)</h2>
-                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <div id="learned-words-list" class="p-4 overflow-y-auto"></div>
-        </div>
-    </div>
-    <div id="stats-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-xl font-bold">Progresso dell'apprendimento</h2>
-                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <div class="p-4">
-                <canvas id="stats-chart"></canvas>
-            </div>
-        </div>
-    </div>
-    <div id="stories-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-xl font-bold">Biblioteca di Storie</h2>
-                <button id="add-story-btn" class="bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors text-sm">Aggiungi nuova</button>
-            </header>
-            <div id="stories-list" class="p-4 overflow-y-auto flex-grow">
-            </div>
-            <footer class="p-2 border-t">
-                <button class="close-modal-btn w-full text-slate-500 hover:text-slate-800 p-2">Chiudi</button>
-            </footer>
-        </div>
-    </div>
-    <div id="story-viewer-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div id="story-viewer-bg-container" class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col transform scale-95 bg-cover bg-center">
-            <header class="flex justify-between items-center p-4 border-b bg-white/70 backdrop-blur-none rounded-t-2xl">
-                <h2 id="story-viewer-title" class="text-xl font-bold truncate">...</h2>
-                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <div id="story-viewer-content" class="p-6 overflow-y-auto flex-grow leading-relaxed bg-white/70 text-slate-900 backdrop-blur-none"></div>
-            <footer class="p-4 border-t flex justify-between items-center bg-white/70 backdrop-blur-none rounded-b-2xl">
-                <div class="flex items-center space-x-2">
-                    <button id="upload-story-bg-btn" class="bg-slate-200 text-slate-700 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 transition-colors text-sm">Sfondo</button>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <label for="speed-slider" class="text-sm text-slate-600">Velocità:</label>
-                    <input type="range" id="speed-slider" min="0.5" max="1" value="1" step="0.05" class="w-24">
-                </div>
-                <button id="listen-full-story-btn" class="bg-sky-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-sky-600 transition-colors flex items-center space-x-2">
-                    <svg class="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon></svg>
-                    <svg class="stop-icon hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12"></rect></svg>
-                </button>
-            </footer>
-        </div>
-    </div>
-    <div id="add-word-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col transform scale-95">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-xl font-bold">Aggiungi parole alla base: <span id="add-word-deck-name" class="text-sky-600"></span></h2>
-                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <form id="add-word-form" class="p-6 space-y-4">
-                <div>
-                    <label for="bulk-words-input" class="block text-sm font-medium text-slate-700">Pega la lista di parole</label>
-                    <p class="text-xs text-slate-500 mb-2">Ogni parola in una nuova linea. Usa punto e coma (;) per separare le parti: <code class="bg-slate-100 p-1 rounded">italiano;polacco;frase in italiano;frase in polacco</code></p>
-                    <textarea id="bulk-words-input" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500 h-48" placeholder="di;z, od;Un bicchiere di vino.;Kieliszek wina.&#10;e;i;Pane e burro.;Chleb i masło."></textarea>
-                </div>
-                <button type="submit" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Salva parole</button>
-            </form>
-        </div>
-    </div>
-    <div id="review-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-lg flex flex-col transform scale-95">
-            <header class="flex justify-between items-center p-4 border-b">
-                <h2 class="text-xl font-bold">Sessione di Ripasso</h2>
-                <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <div class="p-6 space-y-4">
-                <div class="p-4 border rounded-lg">
-                    <h3 class="font-semibold mb-2">Ultime 20 parole imparate</h3>
-                    <div class="flex gap-2">
-                        <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="last" data-count="20">Studio Normale</button>
-                        <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="last" data-count="20">Test</button>
-                    </div>
-                </div>
-                <div class="p-4 border rounded-lg">
-                    <h3 class="font-semibold mb-2">Ultime 50 parole imparate</h3>
-                    <div class="flex gap-2">
-                        <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="last" data-count="50">Studio Normale</button>
-                        <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="last" data-count="50">Test</button>
-                    </div>
-                </div>
-                <div class="p-4 border rounded-lg">
-                    <h3 class="font-semibold mb-2">Parole imparate oggi</h3>
-                    <div class="flex gap-2">
-                        <button class="review-btn-learn flex-1 bg-sky-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-sky-600" data-type="today">Studio Normale</button>
-                        <button class="review-btn-test flex-1 bg-slate-200 text-slate-700 font-semibold py-2 px-4 rounded-lg hover:bg-slate-300" data-type="today">Test</button>
+        <div id="auth-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
+                <header class="flex justify-between items-center p-4 border-b">
+                    <h2 id="auth-modal-title" class="text-xl font-bold">Zaloguj się lub zarejestruj</h2>
+                    <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
+                </header>
+                <div class="p-6">
+                    <form id="auth-form" class="space-y-4">
+                        <div>
+                            <label for="auth-email" class="block text-sm font-medium text-slate-700">Email</label>
+                            <input type="email" name="email" id="auth-email" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="username">
+                        </div>
+                        <div>
+                            <label for="auth-password" class="block text-sm font-medium text-slate-700">Hasło</label>
+                            <input type="password" name="password" id="auth-password" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="current-password">
+                        </div>
+                        <div id="auth-error-message" class="text-red-500 text-sm hidden"></div>
+                        <button id="resend-confirm-btn" class="hidden w-full mt-2 text-sm text-sky-600 hover:underline">Wyślij e-mail z potwierdzeniem ponownie</button>
+                        <div class="text-right">
+                            <a href="#" id="forgot-password-link" class="text-sm text-sky-600 hover:underline">Zapomniałeś(aś) hasła?</a>
+                        </div>
+                        <div class="flex gap-4">
+                            <button id="login-btn" type="button" class="flex-1 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zaloguj</button>
+                            <button id="register-btn" type="button" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">Zarejestruj</button>
+                        </div>
+                    </form>
+                    <form id="reset-password-form" class="hidden space-y-4">
+                        <p class="text-sm text-slate-600">Podaj swój adres e-mail, a wyślemy Ci instrukcje, jak zresetować hasło.</p>
+                        <div>
+                            <label for="reset-email" class="block text-sm font-medium text-slate-700">Email</label>
+                            <input type="email" name="reset-email" id="reset-email" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm" autocomplete="email">
+                        </div>
+                        <button type="submit" id="send-reset-btn" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600">Wyślij instrukcje</button>
+                        <div class="text-center">
+                            <a href="#" id="back-to-login-link" class="text-sm text-slate-500 hover:underline">Wróć do logowania</a>
+                        </div>
+                    </form>
+                    <div id="auth-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center"></div>
+                    <div id="user-info" class="hidden mt-4 text-center">
+                        <p>
+                            Zalogowano jako: <strong id="user-email-display"></strong>
+                        </p>
+                        <button id="logout-btn" class="mt-4 w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition-colors">Wyloguj</button>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="auth-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none" data-close-on-outside="false">
-    <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
-        <header class="flex justify-between items-center p-4 border-b">
-            <h2 id="auth-modal-title" class="text-xl font-bold">Konto użytkownika</h2>
-            <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-        </header>
-        <div class="p-6">
-            <form id="auth-form" class="space-y-4">
-                <input type="email" id="auth-email" required placeholder="Adres e-mail" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="username">
-                <input type="password" id="auth-password" required placeholder="Hasło" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" autocomplete="current-password">
-                <div id="auth-error-message" class="text-red-500 text-sm hidden"></div>
-                <button id="resend-confirm-btn" type="button" class="hidden w-full mt-2 text-sm text-sky-600 hover:underline">Nie dostałeś e-maila? Wyślij ponownie link aktywacyjny</button>
-                <div class="text-right"><a href="#" id="forgot-password-link" class="text-sm text-sky-600 hover:underline">Nie pamiętam hasła...</a></div>
-                <div class="flex gap-4">
-                    <button id="login-btn" type="submit" class="flex-1 bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zaloguj</button>
-                    <button id="register-btn" type="button" class="flex-1 bg-slate-200 text-slate-700 font-bold py-3 px-4 rounded-lg hover:bg-slate-300 transition-colors">Zarejestruj</button>
+        <div id="update-password-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none" data-close-on-outside="false">
+            <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col transform scale-95">
+                <header class="p-4 border-b">
+                    <h2 class="text-xl font-bold">Ustaw nowe hasło</h2>
+                </header>
+                <div class="p-6">
+                    <form id="update-password-form" class="space-y-4">
+                        <div>
+                            <label for="new-password" class="block text-sm font-medium text-slate-700">Nowe hasło</label>
+                            <input type="password" name="new-password" id="new-password" required class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
+                        </div>
+                        <div id="update-password-message" class="text-sm hidden"></div>
+                        <button id="update-password-btn" type="submit" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Zapisz nowe hasło</button>
+                    </form>
                 </div>
-            </form>
-            <form id="reset-password-form" class="hidden space-y-4">
-                <p class="text-sm text-slate-600">Podaj swój adres e-mail, a my wyślemy Ci instrukcje, jak zresetować hasło.</p>
-                <input type="email" id="reset-email" required placeholder="Adres e-mail" autocomplete="email" class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500">
-                <button type="submit" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-sky-600 transition-colors">Wyślij instrukcje</button>
-                <div class="text-center"><a href="#" id="back-to-login-link" class="text-sm text-slate-500 hover:underline">Wróć do logowania</a></div>
-            </form>
-            <div id="auth-success-message" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-lg text-center"></div>
-            <div id="user-info" class="hidden mt-4 text-center">
-                <p>Zalogowano jako: <strong id="user-email-display" class="break-all"></strong></p>
-                <button id="logout-btn" class="mt-4 w-full bg-red-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-red-600 transition-colors">Wyloguj</button>
             </div>
         </div>
-    </div>
-</div>
-    <div id="update-password-modal" class="modal fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none" data-close-on-outside="false">
-        <div class="modal-content bg-white rounded-2xl shadow-xl w-full max-w-sm flex flex-col">
-            <header class="p-4 border-b flex justify-between items-center">
-                <h2 class="text-xl font-bold">Ustaw nowe hasło</h2>
-                 <button class="close-modal-btn p-2 text-2xl text-slate-400 hover:text-slate-800">&times;</button>
-            </header>
-            <div class="p-6">
-                <form id="update-password-form" class="space-y-4">
-                    <input type="password" id="new-password" required placeholder="Nowe hasło" class="w-full px-3 py-2 border rounded-md" autocomplete="new-password">
-                    <div id="update-password-message" class="text-sm hidden"></div>
-                    <button id="update-password-btn" type="submit" class="w-full bg-sky-500 text-white font-bold py-3 px-4 rounded-lg">Zapisz nowe hasło</button>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <script>
-  document.addEventListener('DOMContentLoaded', async () => {
-
-    // --- 1. KONFIGURACJA i INICJALIZACJA ---
-    const SUPABASE_URL = 'https://elneujplpdoruvrvzvzd.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVsbmV1anBscGRvcnV2cnZ6dnpkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4MDQ3NjYsImV4cCI6MjA3MjM4MDc2Nn0.YIJYmt8KeiXH0iFS_Pk6ErIkyKZpPDsi29G83VItjCc';
-    const { createClient } = supabase;
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const NEW_WORDS_PER_DAY = 10;
-    const dbName = 'ParolaChiaveDB_Local_v1';
-    const dbVersion = 1;
-    let localDb;
-    
-    // --- 2. STAN APLIKACJI (PAMIĘĆ PODRĘCZNA) ---
-    let decks = [];
-    let words = [];
-    let activeDeckId = null;
-    let newQueue = [];
-    let reviewQueue = [];
-    let currentCard = null;
-    let statsChart = null;
-    let currentAudio = null;
-    let synth = window.speechSynthesis;
-    let testWords = [];
-    let currentTestQuestionIndex = 0;
-    let testScore = 0;
-
-    // --- 3. SELEKTORY DOM ---
-    const selectors = {
-        loadingState: document.getElementById('loading-state'),
-        summaryState: document.getElementById('summary-state'),
-        learningState: document.getElementById('learning-state'),
-        testState: document.getElementById('test-state'),
-        testSummaryState: document.getElementById('test-summary-state'),
-        newCountEl: document.getElementById('new-count'),
-        reviewCountEl: document.getElementById('review-count'),
-        learnedCountEl: document.getElementById('learned-count'),
-        cardRankEl: document.getElementById('card-rank'),
-        cardItalianEl: document.getElementById('card-italian'),
-        cardPolishEl: document.getElementById('card-polish'),
-        cardExampleItEl: document.getElementById('card-example-it'),
-        cardExamplePlEl: document.getElementById('card-example-pl'),
-        cardImageEl: document.getElementById('card-image'),
-        showAnswerBtn: document.getElementById('show-answer-btn'),
-        difficultyButtons: document.getElementById('difficulty-buttons'),
-        flashcard: document.getElementById('flashcard'),
-        startNewSessionEarlyBtn: document.getElementById('start-new-session-early'),
-        resetProgressBtn: document.getElementById('reset-progress'),
-        speakBtnFront: document.getElementById('speak-btn-front'),
-        speakBtnBack: document.getElementById('speak-btn-back'),
-        addImageBtn: document.getElementById('add-image-btn'),
-        imageUploadInput: document.getElementById('image-upload-input'),
-        headerImageEl: document.getElementById('header-image'),
-        uploadHeaderBtn: document.getElementById('upload-header-btn'),
-        headerUploadInput: document.getElementById('header-upload-input'),
-        storyUploadInput: document.getElementById('story-upload-input'),
-        uploadGlobalBgBtn: document.getElementById('upload-global-bg-btn'),
-        globalBgUploadInput: document.getElementById('global-bg-upload-input'),
-        cardFrontBgEl: document.getElementById('card-front-bg'),
-        activeDeckNameEl: document.getElementById('active-deck-name'),
-        storyBgUploadInput: document.getElementById('story-bg-upload-input'),
-        uploadStoryBgBtn: document.getElementById('upload-story-bg-btn'),
-        storyViewerBgContainer: document.getElementById('story-viewer-bg-container'),
-        speedSlider: document.getElementById('speed-slider'),
-        showDecksBtn: document.getElementById('show-decks-btn'),
-        showLearnedWordsBtn: document.getElementById('show-learned-words-btn'),
-        showStatsBtn: document.getElementById('show-stats-btn'),
-        showStoriesBtn: document.getElementById('show-stories-btn'),
-        showReviewBtn: document.getElementById('show-review-btn'),
-        decksModal: document.getElementById('decks-modal'),
-        learnedWordsModal: document.getElementById('learned-words-modal'),
-        statsModal: document.getElementById('stats-modal'),
-        storiesModal: document.getElementById('stories-modal'),
-        storyViewerModal: document.getElementById('story-viewer-modal'),
-        addWordModal: document.getElementById('add-word-modal'),
-        reviewModal: document.getElementById('review-modal'),
-        decksListEl: document.getElementById('decks-list'),
-        learnedWordsList: document.getElementById('learned-words-list'),
-        statsChartCanvas: document.getElementById('stats-chart'),
-        learnedWordsCountEl: document.getElementById('learned-words-count'),
-        storiesListEl: document.getElementById('stories-list'),
-        addStoryBtn: document.getElementById('add-story-btn'),
-        storyViewerTitle: document.getElementById('story-viewer-title'),
-        storyViewerContent: document.getElementById('story-viewer-content'),
-        listenFullStoryBtn: document.getElementById('listen-full-story-btn'),
-        addWordForm: document.getElementById('add-word-form'),
-        addDeckForm: document.getElementById('add-deck-form'),
-        deckDetailsView: document.getElementById('deck-details-view'),
-        deckDetailsName: document.getElementById('deck-details-name'),
-        deckDetailsWords: document.getElementById('deck-details-words'),
-        openAddWordModalBtn: document.getElementById('open-add-word-modal-btn'),
-        addWordDeckName: document.getElementById('add-word-deck-name'),
-        authModal: document.getElementById('auth-modal'),
-        showAuthBtn: document.getElementById('show-auth-btn'),
-        authForm: document.getElementById('auth-form'),
-        loginBtn: document.getElementById('login-btn'),
-        registerBtn: document.getElementById('register-btn'),
-        logoutBtn: document.getElementById('logout-btn'),
-        authErrorMessage: document.getElementById('auth-error-message'),
-        authSuccessMessage: document.getElementById('auth-success-message'),
-        userInfo: document.getElementById('user-info'),
-        userEmailDisplay: document.getElementById('user-email-display'),
-        authIconUser: document.getElementById('auth-icon-user'),
-        authIconLogout: document.getElementById('auth-icon-logout'),
-        authModalTitle: document.getElementById('auth-modal-title'),
-        forgotPasswordLink: document.getElementById('forgot-password-link'),
-        resetPasswordForm: document.getElementById('reset-password-form'),
-        backToLoginLink: document.getElementById('back-to-login-link'),
-        resendConfirmBtn: document.getElementById('resend-confirm-btn'),
-        updatePasswordModal: document.getElementById('update-password-modal'),
-        updatePasswordForm: document.getElementById('update-password-form'),
-        updatePasswordMessage: document.getElementById('update-password-message'),
-    };
-    
-    // --- 4. FUNKCJE POMOCNICZE ---
-    const getToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
-    const addDays = (date, days) => { const r = new Date(date); r.setDate(r.getDate() + days); return r; };
-    const formatDate = (date) => date.toLocaleDateString('pl-PL');
-    function openModal(modal) { if(modal) { modal.classList.remove('opacity-0', 'pointer-events-none'); if(modal.querySelector('.modal-content')) modal.querySelector('.modal-content').classList.remove('scale-95'); } }
-    function closeModal(modal) { if(modal) { modal.classList.add('opacity-0', 'pointer-events-none'); if(modal.querySelector('.modal-content')) modal.querySelector('.modal-content').classList.add('scale-95'); } }
-
-    async function speak(text, lang = 'it-IT', rate = 1.0, onEndCallback) {
-        if (!text) { if(onEndCallback) onEndCallback(); return; }
-        if (currentAudio && !currentAudio.paused) { currentAudio.pause(); currentAudio = null; }
-        if(synth.speaking) synth.cancel();
-        try {
-             const utterance = new SpeechSynthesisUtterance(text);
-             utterance.lang = lang;
-             utterance.rate = rate;
-             utterance.onend = onEndCallback;
-             synth.speak(utterance);
-        } catch (error) { console.error('Błąd syntezy mowy:', error); if (onEndCallback) onEndCallback(); }
-    }
-
-    // --- 5. LOGIKA BAZY DANYCH (LOKALNA - IndexedDB) ---
-    function openLocalDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(dbName, dbVersion);
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains('app_data')) db.createObjectStore('app_data', { keyPath: 'key' });
-                if (!db.objectStoreNames.contains('user_stories')) db.createObjectStore('user_stories', { keyPath: 'id', autoIncrement: true });
-            };
-            request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject('IndexedDB error: ' + event.target.error);
-        });
-    }
-    function localDbRequest(request) {
-        return new Promise((resolve, reject) => {
-            if (!request) return reject("Request is undefined");
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = () => reject(request.error);
-        });
-    }
-    async function getLocalData(key) {
-        const store = localDb.transaction('app_data', 'readonly').objectStore('app_data');
-        const result = await localDbRequest(store.get(key));
-        return result ? result.value : undefined;
-    }
-    async function setLocalData(key, value) {
-        const store = localDb.transaction('app_data', 'readwrite').objectStore('app_data');
-        store.put({ key, value });
-    }
-    
-    // --- 6. GŁÓWNE FUNKCJE APLIKACJI ---
-    
-    async function fetchUserData(user) {
-        selectors.loadingState.classList.remove('hidden');
-        selectors.learningState.classList.add('hidden');
-        selectors.summaryState.classList.add('hidden');
-        
-        if (!user) {
-            decks = []; words = []; activeDeckId = null;
-            renderDecksList(); startSession();
-            selectors.loadingState.innerHTML = '<p class="text-slate-500 text-center p-8">Zaloguj się, aby zsynchronizować swoje postępy.</p>';
-            return;
-        }
-        
-        const { data, error } = await supabaseClient.from('decks').select('*, words(*)').eq('user_id', user.id);
-
-        if (error) {
-            console.error("Błąd pobierania danych:", error);
-            selectors.loadingState.innerHTML = `<p class="text-red-500 font-bold">Błąd: ${error.message}</p>`;
-            return;
-        }
-        
-        decks = data || [];
-        words = decks.flatMap(deck => deck.words || []);
-        
-        const lastActiveId = await getLocalData(`activeDeckId_${user.id}`);
-        const deckExists = decks.some(d => d.id === lastActiveId);
-        activeDeckId = (lastActiveId && deckExists) ? lastActiveId : (decks.length > 0 ? decks[0].id : null);
-        
-        renderDecksList();
-        startSession();
-        selectors.loadingState.classList.add('hidden');
-    }
-    
-    function renderDecksList() {
-        selectors.decksListEl.innerHTML = '';
-        if (decks.length === 0) {
-            selectors.decksListEl.innerHTML = '<p class="text-center text-slate-500 p-4">Nie masz jeszcze żadnych talii. Stwórz nową, aby zacząć naukę.</p>';
-            return;
-        }
-        
-        decks.forEach(deck => {
-            const wordCount = words.filter(w => w.deck_id === deck.id).length;
-            const deckEl = document.createElement('div');
-            deckEl.className = `flex justify-between items-center p-3 hover:bg-slate-100 rounded-lg cursor-pointer ${deck.id === activeDeckId ? 'bg-sky-100 font-bold' : ''}`;
-            deckEl.innerHTML = `
-                <div class="deck-name-container grow pr-2">
-                    <p>${deck.name} <span class="font-normal text-slate-500 text-sm">(${wordCount} słów)</span></p>
-                </div>
-                <div class="flex items-center space-x-2">
-                     <button data-deck-id="${deck.id}" class="view-deck-btn text-slate-400 hover:text-sky-600 transition-colors p-1" title="Pokaż słówka">👁️</button>
-                     <button data-deck-id="${deck.id}" class="delete-deck-btn text-slate-400 hover:text-red-500 transition-colors p-1" title="Usuń talię">&times;</button>
-                </div>`;
-
-            deckEl.querySelector('.deck-name-container').addEventListener('click', async () => {
-                activeDeckId = deck.id;
-                const { data: { user } } = await supabaseClient.auth.getUser();
-                if (user) await setLocalData(`activeDeckId_${user.id}`, activeDeckId);
-                startSession(); renderDecksList(); closeModal(selectors.decksModal);
-            });
-            deckEl.querySelector('.delete-deck-btn').addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (confirm(`Czy na pewno chcesz usunąć talię "${deck.name}" i wszystkie jej słówka? Tej operacji nie można cofnąć.`)) await deleteDeck(deck.id);
-            });
-             deckEl.querySelector('.view-deck-btn').addEventListener('click', (e) => {
-                e.stopPropagation(); showDeckDetails(deck);
-            });
-            selectors.decksListEl.appendChild(deckEl);
-        });
-    }
-    
-    async function handleAddDeck(e) {
-    e.preventDefault();
-    console.log("--- START TESTU ---");
-    console.log("1. Funkcja handleAddDeck wystartowała.");
-    
-    const deckNameInput = document.getElementById('new-deck-name');
-    const deckName = deckNameInput.value.trim();
-    if (!deckName) {
-        console.log("Zatrzymano: Brak nazwy talii.");
-        return;
-    }
-
-    const { data: { user } } = await supabaseClient.auth.getUser();
-    if (!user) {
-        alert("Musisz być zalogowany, aby dodać talię.");
-        console.log("Zatrzymano: Użytkownik nie jest zalogowany.");
-        return;
-    }
-    console.log("2. Sprawdzono użytkownika. Jest zalogowany. ID:", user.id);
-    
-    console.log("3. Przygotowuję się do wysłania danych do Supabase...");
-    
-    // To jest moment, w którym komunikujemy się z bazą danych
-    const { data: newDeck, error } = await supabaseClient
-        .from('decks')
-        .insert({ name: deckName, user_id: user.id })
-        .select()
-        .single();
-    
-    console.log("4. Otrzymałem odpowiedź od Supabase.");
-
-    if (error) {
-        console.error("5. BŁĄD: Supabase zwróciło błąd:", error);
-        alert(`Wystąpił błąd podczas tworzenia talii: ${error.message}`);
-    } else {
-        console.log("5. SUKCES: Supabase zwróciło dane nowej talii:", newDeck);
-        decks.push({ ...newDeck, words: [] });
-        if (!activeDeckId) activeDeckId = newDeck.id;
-        renderDecksList();
-        deckNameInput.value = '';
-        console.log("6. Interfejs użytkownika został zaktualizowany.");
-    }
-    console.log("--- KONIEC TESTU ---");
-}
-
-    
-    async function deleteDeck(deckId) {
-        const { error } = await supabaseClient.from('decks').delete().eq('id', deckId);
-        if (error) {
-            console.error("Błąd usuwania talii:", error); alert(`Błąd: ${error.message}`);
-        } else {
-            decks = decks.filter(d => d.id !== deckId);
-            words = words.filter(w => w.deck_id !== deckId);
-            if (activeDeckId === deckId) {
-                activeDeckId = decks.length > 0 ? decks[0].id : null;
-                startSession();
-            }
-            renderDecksList();
-        }
-    }
-
-        async function handleAddWords(e) {
-    e.preventDefault();
-    // Nasz "podsłuch" - sprawdzamy, czy funkcja w ogóle startuje
-    console.log("Przycisk 'Salva parole' kliknięty! Funkcja handleAddWords wystartowała.");
-
-    const bulkInput = document.getElementById('bulk-words-input');
-    const text = bulkInput.value.trim();
-    if (!text) {
-        console.warn("Próba dodania słówek bez tekstu.");
-        return;
-    }
-    
-    if (!activeDeckId) {
-        console.error("Błąd krytyczny: Brak wybranej aktywnej talii (activeDeckId jest null).");
-        alert("Błąd: Nie wybrano żadnej aktywnej talii. Przejdź do menu talii, wybierz jedną (klikając na jej nazwę) i spróbuj ponownie.");
-        return;
-    }
-    
-    console.log(`Dodawanie słówek do talii o ID: ${activeDeckId}`);
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    const newWordsData = lines.map(line => {
-        const parts = line.split(';').map(part => part.trim());
-        if (parts.length !== 4) return null;
-        const [italian, polish, example_it, example_pl] = parts;
-        return { deck_id: activeDeckId, italian, polish, example_it, example_pl, next_review: new Date().toISOString() };
-    }).filter(Boolean);
-    
-    if (newWordsData.length === 0) {
-        alert("Nie znaleziono poprawnych słówek. Sprawdź format (wymagane 4 części oddzielone średnikami).");
-        return;
-    }
-    
-    console.log(`Przygotowano ${newWordsData.length} słówek do wysłania.`);
-    const { data: insertedWords, error } = await supabaseClient.from('words').insert(newWordsData).select();
-    
-    if (error) {
-        console.error("Błąd podczas dodawania słówek do Supabase:", error);
-        alert(`Wystąpił błąd podczas zapisywania słówek: ${error.message}`);
-    } else {
-        console.log("Słówka dodane pomyślnie:", insertedWords);
-        words.push(...insertedWords);
-        renderDecksList();
-        startSession();
-        bulkInput.value = '';
-        closeModal(selectors.addWordModal);
-        alert(`Dodano pomyślnie ${insertedWords.length} słów!`);
-    }
-}
-
-    async function handleAddStory(event) {
-        const file = event.target.files[0];
-        if (!file || !file.name.endsWith('.txt')) return;
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const store = localDb.transaction('user_stories', 'readwrite').objectStore('user_stories');
-            try {
-                await localDbRequest(store.add({ title: file.name, content: e.target.result }));
-                console.log(`Historia "${file.name}" została dodana do IndexedDB.`);
-                // Symuluje kliknięcie, aby otworzyć i odświeżyć listę
-                selectors.showStoriesBtn.dispatchEvent(new Event('click'));
-            } catch (err) {
-                console.error("Błąd podczas dodawania historii do IndexedDB:", err);
-                alert("Nie udało się dodać historii.");
-            }
-        };
-        reader.readAsText(file);
-        event.target.value = '';
-    }
-
-    function startSession(customReviewWords = null) {
-        const activeDeck = decks.find(d => d.id === activeDeckId);
-        selectors.activeDeckNameEl.textContent = activeDeck ? activeDeck.name : 'Wybierz talię';
-        
-        if (!activeDeckId || !activeDeck) {
-            selectors.learningState.classList.add('hidden');
-            selectors.summaryState.classList.add('hidden');
-            return;
-        }
-
-        if (customReviewWords) {
-            newQueue = [];
-            reviewQueue = [...customReviewWords];
-        } else {
-            const today = new Date();
-            const sessionWords = words.filter(w => w.deck_id === activeDeckId);
-            reviewQueue = sessionWords.filter(w => w.interval > 0 && new Date(w.next_review) <= today);
-            newQueue = sessionWords.filter(w => (!w.interval || w.interval === 0)).slice(0, NEW_WORDS_PER_DAY);
-        }
-        
-        if (newQueue.length === 0 && reviewQueue.length === 0) {
-            selectors.summaryState.classList.remove('hidden');
-            selectors.learningState.classList.add('hidden');
-        } else {
-            selectors.summaryState.classList.add('hidden');
-            selectors.learningState.classList.remove('hidden');
-            nextCard();
-        }
-        updateCounts();
-        updateLearnedCount();
-    }
-
-    function nextCard() {
-        selectors.flashcard.classList.remove('is-flipped');
-        selectors.difficultyButtons.classList.add('hidden');
-        selectors.showAnswerBtn.classList.remove('hidden');
-
-        setTimeout(() => {
-            if (reviewQueue.length > 0) currentCard = reviewQueue.shift();
-            else if (newQueue.length > 0) currentCard = newQueue.shift();
-            else currentCard = null;
-
-            if (currentCard) {
-                updateCardUI();
-            } else {
-                startSession();
-            }
-            updateCounts();
-        }, 300);
-    }
-
-    function updateCardUI() {
-        if (!currentCard) return;
-        selectors.cardRankEl.textContent = `#${currentCard.id}`;
-        selectors.cardItalianEl.textContent = currentCard.italian;
-        selectors.cardPolishEl.textContent = currentCard.polish;
-        selectors.cardExampleItEl.textContent = currentCard.example_it;
-        selectors.cardExamplePlEl.textContent = currentCard.example_pl;
-        selectors.cardImageEl.src = "";
-        selectors.cardImageEl.style.display = 'none';
-        setTimeout(() => speak(currentCard.italian, 'it-IT', 1.0), 200);
-    }
-
-    async function processAnswer(difficulty) {
-        if (!currentCard) return;
-        const card = currentCard;
-        let updateData = {};
-        
-        if (difficulty === 1) {
-            reviewQueue.unshift(card);
-            updateData = { 
-                interval: 0, 
-                is_learning: true,
-                next_review: new Date().toISOString()
-            };
-            card.interval = 0; card.is_learning = true;
-        } else {
-            const isNew = !card.interval || card.interval === 0;
-            card.interval = isNew ? 1 : Math.max(1, card.interval * (card.ease_factor || 2.5));
-            card.ease_factor = isNew ? 2.6 : (card.ease_factor || 2.5) + 0.1;
-            
-            updateData = {
-                is_learning: false,
-                interval: card.interval,
-                ease_factor: card.ease_factor,
-                next_review: addDays(getToday(), Math.round(card.interval)).toISOString()
-            };
-            if (isNew) {
-                updateData.learned_date = new Date().toISOString();
-                card.learned_date = updateData.learned_date;
-                updateLearnedCount();
-            }
-        }
-        const { error } = await supabaseClient.from('words').update(updateData).eq('id', card.id);
-        if (error) console.error("Błąd zapisu postępu:", error);
-        nextCard();
-    }
-    
-    function updateCounts() {
-        let currentNew = currentCard && (!currentCard.interval || currentCard.interval === 0) ? 1 : 0;
-        let currentReview = currentCard && currentCard.interval > 0 ? 1 : 0;
-        selectors.newCountEl.textContent = newQueue.length + currentNew;
-        selectors.reviewCountEl.textContent = reviewQueue.length + currentReview;
-    }
-    
-    function updateLearnedCount() {
-        selectors.learnedCountEl.textContent = words.filter(w => w.learned_date).length;
-    }
-
-    function showDeckDetails(deck) {
-        selectors.deckDetailsView.classList.remove('hidden');
-        selectors.deckDetailsName.textContent = deck.name;
-        const wordsInDeck = words.filter(w => w.deck_id === deck.id);
-        selectors.deckDetailsWords.innerHTML = wordsInDeck.length > 0
-            ? wordsInDeck.map(w => `<div class="text-sm py-1">${w.italian} - ${w.polish}</div>`).join('')
-            : '<p class="text-slate-500 text-sm">Nessuna parola in questa base di dati.</p>';
-    }
-
-    // --- 7. LOGIKA AUTENTYKACJI ---
-    function updateAuthUI(user) {
-        if (user) {
-            selectors.authIconUser.classList.add('hidden');
-            selectors.authIconLogout.classList.remove('hidden');
-            selectors.authForm.classList.add('hidden');
-            selectors.resetPasswordForm.classList.add('hidden');
-            selectors.userInfo.classList.remove('hidden');
-            selectors.userEmailDisplay.textContent = user.email;
-        } else {
-            selectors.authIconUser.classList.remove('hidden');
-            selectors.authIconLogout.classList.add('hidden');
-            selectors.authForm.classList.remove('hidden');
-            selectors.userInfo.classList.add('hidden');
-        }
-    }
-    
-    async function handleLogin(e) {
-        e.preventDefault();
-        selectors.authErrorMessage.classList.add('hidden');
-        const email = document.getElementById('auth-email').value;
-        const password = document.getElementById('auth-password').value;
-        const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
-        if (error) {
-            selectors.authErrorMessage.textContent = error.message;
-            selectors.authErrorMessage.classList.remove('hidden');
-            if (error.message.includes('Email not confirmed')) selectors.resendConfirmBtn.classList.remove('hidden');
-        } else {
-            selectors.authForm.reset();
-            closeModal(selectors.authModal);
-        }
-    }
-
-    async function handleRegister(e) {
-         e.preventDefault();
-         selectors.authErrorMessage.classList.add('hidden');
-         const email = document.getElementById('auth-email').value;
-         const password = document.getElementById('auth-password').value;
-         const { error } = await supabaseClient.auth.signUp({ email, password });
-         if (error) {
-             selectors.authErrorMessage.textContent = error.message;
-             selectors.authErrorMessage.classList.remove('hidden');
-         } else {
-             selectors.authForm.classList.add('hidden');
-             selectors.authSuccessMessage.innerHTML = 'Wysłaliśmy link potwierdzający na Twój adres e-mail. Sprawdź swoją skrzynkę, aby dokończyć rejestrację.';
-             selectors.authSuccessMessage.classList.remove('hidden');
-         }
-    }
-
-    async function handlePasswordResetRequest(e) {
-        e.preventDefault();
-        const email = document.getElementById('reset-email').value;
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin });
-        selectors.resetPasswordForm.classList.add('hidden');
-        selectors.authSuccessMessage.classList.remove('hidden');
-        if (error) selectors.authSuccessMessage.innerHTML = `<p class="text-red-600">Błąd: ${error.message}</p>`;
-        else selectors.authSuccessMessage.innerHTML = '<p>Jeśli konto istnieje, wysłano link do resetowania hasła na Twój e-mail.</p>';
-    }
-
-    async function handlePasswordUpdate(e) {
-        e.preventDefault();
-        const newPassword = document.getElementById('new-password').value;
-        const msgEl = selectors.updatePasswordMessage;
-        if (newPassword.length < 6) {
-            msgEl.textContent = 'Hasło musi mieć co najmniej 6 znaków.';
-            msgEl.className = 'text-sm text-red-500';
-            msgEl.classList.remove('hidden');
-            return;
-        }
-        const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
-        selectors.updatePasswordForm.classList.add('hidden');
-        msgEl.classList.remove('hidden');
-        if (error) {
-            msgEl.textContent = `Błąd: ${error.message}`;
-            msgEl.className = 'text-sm text-red-500';
-        } else {
-            msgEl.innerHTML = 'Hasło zostało pomyślnie zmienione! Możesz teraz zamknąć to okno.';
-            msgEl.className = 'text-sm text-green-600';
-            setTimeout(() => closeModal(selectors.updatePasswordModal), 3000);
-        }
-    }
-
-    // --- 8. INICJALIZACJA APLIKACJI i NASŁUCHIWANIE ZDARZEŃ ---
-    async function init() {
-        localDb = await openLocalDB();
-        
-        const savedHeader = await getLocalData('headerImage');
-        if(savedHeader) selectors.headerImageEl.src = savedHeader;
-        const savedGlobalBg = await getLocalData('globalFlashcardBg');
-        if(savedGlobalBg) selectors.cardFrontBgEl.src = savedGlobalBg;
-
-        supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            const user = session ? session.user : null;
-            updateAuthUI(user);
-            
-            if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-                await fetchUserData(user);
-                closeModal(selectors.authModal);
-            } else if (event === 'SIGNED_OUT') {
-                await fetchUserData(null);
-            } else if (event === 'PASSWORD_RECOVERY') {
-                closeModal(selectors.authModal);
-                openModal(selectors.updatePasswordModal);
-            }
-        });
-
-        document.querySelectorAll('.modal').forEach(modal => {
-            modal.addEventListener('click', (e) => { if (e.target === modal && modal.dataset.closeOnOutside !== 'false') closeModal(modal); });
-            modal.querySelector('.close-modal-btn')?.addEventListener('click', () => closeModal(modal));
-        });
-        selectors.showDecksBtn.addEventListener('click', () => { selectors.deckDetailsView.classList.add('hidden'); renderDecksList(); openModal(selectors.decksModal); });
-        selectors.addDeckForm.addEventListener('submit', handleAddDeck);
-        selectors.addWordForm.addEventListener('submit', handleAddWords);
-        selectors.showAuthBtn.addEventListener('click', () => {
-            selectors.authForm.classList.remove('hidden');
-            selectors.resetPasswordForm.classList.add('hidden');
-            selectors.authSuccessMessage.classList.add('hidden');
-            selectors.authErrorMessage.classList.add('hidden');
-            selectors.resendConfirmBtn.classList.add('hidden');
-            selectors.authModalTitle.textContent = 'Konto użytkownika';
-            openModal(selectors.authModal);
-        });
-        selectors.authForm.addEventListener('submit', handleLogin);
-        selectors.registerBtn.addEventListener('click', handleRegister);
-        selectors.logoutBtn.addEventListener('click', () => supabaseClient.auth.signOut());
-        selectors.openAddWordModalBtn.addEventListener('click', () => {
-            if(!activeDeckId) return alert("Musisz najpierw wybrać aktywną talię.");
-            selectors.addWordDeckName.textContent = decks.find(d => d.id === activeDeckId)?.name || '';
-            closeModal(selectors.decksModal);
-            openModal(selectors.addWordModal);
-        });
-        selectors.showAnswerBtn.addEventListener('click', () => {
-            selectors.flashcard.classList.add('is-flipped');
-            selectors.difficultyButtons.classList.remove('hidden');
-            selectors.showAnswerBtn.classList.add('hidden');
-            if(currentCard) setTimeout(() => speak(currentCard.example_it, 'it-IT', 1.0), 400);
-        });
-        selectors.difficultyButtons.addEventListener('click', (e) => {
-            const button = e.target.closest('button');
-            if (button && button.dataset.difficulty) processAnswer(parseInt(button.dataset.difficulty, 10));
-        });
-        selectors.forgotPasswordLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            selectors.authForm.classList.add('hidden');
-            selectors.resetPasswordForm.classList.remove('hidden');
-            selectors.authModalTitle.textContent = 'Zresetuj hasło';
-        });
-        selectors.backToLoginLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            selectors.resetPasswordForm.classList.add('hidden');
-            selectors.authForm.classList.remove('hidden');
-            selectors.authSuccessMessage.classList.add('hidden');
-            selectors.authModalTitle.textContent = 'Konto użytkownika';
-        });
-        selectors.resetPasswordForm.addEventListener('submit', handlePasswordResetRequest);
-        selectors.updatePasswordForm.addEventListener('submit', handlePasswordUpdate);
-        selectors.storyUploadInput.addEventListener('change', handleAddStory);
-        selectors.addStoryBtn.addEventListener('click', () => selectors.storyUploadInput.click());
-    }
-
-    init(); // Uruchomienie aplikacji
-});
-    </script>
-</body>
+    </body>
 </html>
