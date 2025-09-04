@@ -1,5 +1,6 @@
 // js/ui/modals.js
 import { state, setCurrentAudio } from '../state.js';
+import { supabaseClient } from '../api/supabase.js'; // Dodajemy import klienta Supabase
 
 export function openModal(modal) {
     modal.classList.remove('pointer-events-none', 'opacity-0');
@@ -16,22 +17,34 @@ export function initModals() {
         const closeModalButtons = modal.querySelectorAll('.close-modal-btn');
         
         const closeAction = () => {
-            // Zatrzymaj odtwarzanie opowiadania przy zamykaniu okna
+            // ❗️ NOWA, INTELIGENTNA LOGIKA ❗️
+            // Sprawdzamy, czy zamykamy okno resetowania hasła ORAZ czy w adresie URL jest token odzyskiwania
+            if (modal.id === 'update-password-modal' && window.location.hash.includes('type=recovery')) {
+                console.log('Proces resetowania hasła porzucony. Wylogowywanie...');
+                supabaseClient.auth.signOut();
+                // Czyścimy adres URL, aby po odświeżeniu strony okno nie pojawiło się ponownie
+                window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            }
+            
+            // Logika specyficzna dla okna opowiadania
             if (modal.id === 'story-viewer-modal' && state.currentAudio) {
                 state.currentAudio.pause();
                 setCurrentAudio(null);
             }
-            closeModal(modal);
+
+            closeModal(modal); // Używamy naszej standardowej funkcji do zamknięcia okna
         };
 
-        // Zamykanie po kliknięciu tła
+        // Listener do zamykania przez kliknięcie w tło
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
-                closeAction();
+                if (modal.dataset.closeOnOutside !== 'false') {
+                    closeAction(); // Wywołujemy naszą nową, inteligentną akcję zamykania
+                }
             }
         });
 
-        // Zamykanie po kliknięciu przycisku X
+        // Listener do zamykania przez przycisk "×"
         closeModalButtons.forEach(btn => {
             btn.addEventListener('click', closeAction);
         });

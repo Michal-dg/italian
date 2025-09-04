@@ -1,43 +1,65 @@
-// Plik: service-worker.js
+// service-worker.js
 
-// Nazwa naszej pamięci podręcznej (cache). Zmieniamy ją, gdy aktualizujemy pliki.
+// Krok 1: Definiujemy nazwę i wersję naszej pamięci podręcznej (cache)
+// ❗️ ZMIENIAJ TĘ WERSJĘ PRZY KAŻDYM NOWYM WDROŻENIU (v2, v3, itd.) ❗️
 const CACHE_NAME = 'parola-chiave-cache-v1';
 
-// Lista plików, które chcemy zapisać w pamięci podręcznej, aby aplikacja działała offline.
-const urlsToCache = [
-  '/', // Reprezentuje główny plik index.html
-  'index.html',
-  'slowka_baza_it.js',
-  'stories_baza.js',
-  'images/default-header.jpg',
-  'images/default-card-bg.jpg',
-  // WAŻNE: Jeśli w przyszłości dodasz pliki style.css lub app.js, również je tu dopisz!
+// Pliki, które stanowią rdzeń naszej aplikacji i muszą być dostępne offline
+const URLS_TO_CACHE = [
+    '/',
+    '/index.html',
+    // Możesz tu dodać ścieżki do głównych plików CSS i JS, jeśli chcesz
+    // np. '/js/main.js', '/style.css'
 ];
 
-// Zdarzenie 'install' - wywoływane, gdy Service Worker jest instalowany po raz pierwszy.
-self.addEventListener('install', event => {
-  // Czekamy, aż wszystkie pliki zostaną pobrane i zapisane w pamięci podręcznej.
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Otwarto pamięć podręczną i dodano pliki podstawowe.');
-        return cache.addAll(urlsToCache);
-      })
-  );
+// Krok 2: Instalacja Service Workera
+// Ten kod uruchamia się tylko raz, gdy nowa wersja Service Workera jest instalowana.
+self.addEventListener('install', (event) => {
+    console.log('Service Worker: Instalacja nowej wersji...');
+    event.waitUntil(
+        caches.open(CACHE_NAME)
+            .then((cache) => {
+                console.log('Service Worker: Cache otwarty. Zapisywanie podstawowych plików.');
+                return cache.addAll(URLS_TO_CACHE);
+            })
+    );
+    self.skipWaiting(); // Zmusza nowego Service Workera do natychmiastowej aktywacji
 });
 
-// Zdarzenie 'fetch' - wywoływane za każdym razem, gdy aplikacja próbuje pobrać jakiś zasób (plik, obrazek).
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    // Sprawdzamy, czy żądany zasób jest już w naszej pamięci podręcznej.
-    caches.match(event.request)
-      .then(response => {
-        // Jeśli tak, zwracamy go natychmiast z pamięci podręcznej.
-        if (response) {
-          return response;
-        }
-        // Jeśli nie, próbujemy pobrać go normalnie z sieci.
-        return fetch(event.request);
-      })
-  );
+// Krok 3: Aktywacja Service Workera
+// Ten kod uruchamia się, gdy nowy Service Worker przejmuje kontrolę.
+// Jego zadaniem jest usunięcie STARYCH wersji cache.
+self.addEventListener('activate', (event) => {
+    console.log('Service Worker: Aktywacja.');
+    event.waitUntil(
+        caches.keys().then((cacheNames) => {
+            return Promise.all(
+                cacheNames.map((cacheName) => {
+                    // Jeśli nazwa cache'u nie pasuje do naszej nowej wersji, usuwamy go.
+                    if (cacheName !== CACHE_NAME) {
+                        console.log('Service Worker: Usuwanie starego cache:', cacheName);
+                        return caches.delete(cacheName);
+                    }
+                })
+            );
+        })
+    );
+    return self.clients.claim();
+});
+
+
+// Krok 4: Przechwytywanie zapytań sieciowych (Fetch)
+// To jest serce naszego Service Workera. Decyduje, czy podać plik z sieci, czy z cache.
+self.addEventListener('fetch', (event) => {
+    // Stosujemy strategię "Network Falling Back to Cache" (Najpierw sieć, potem cache)
+    // To zapewnia, że użytkownik zawsze dostaje najnowszą wersję, jeśli jest online.
+    event.respondWith(
+        fetch(event.request)
+            .catch(() => {
+                // Jeśli połączenie sieciowe zawiedzie (użytkownik jest offline),
+                // próbujemy znaleźć odpowiedź w naszej pamięci podręcznej.
+                console.log('Service Worker: Brak sieci, szukanie w cache dla:', event.request.url);
+                return caches.match(event.request);
+            })
+    );
 });

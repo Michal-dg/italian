@@ -1,31 +1,27 @@
 // js/ui/cards.js
-import { state, setQueues, setCurrentCard, setGlobalFlashcardBg, setWords } from '../state.js';
+import { state, setQueues, setCurrentCard } from '../state.js';
 import { elements } from './domElements.js';
 import { getToday, addDays } from '../utils.js';
-import { getTransaction, setAppData, getAllWordsByDeckId } from '../database.js';
 import { speak } from '../api/tts.js';
-import { NEW_WORDS_PER_DAY } from '../config.js';
+import { supabaseClient } from '../api/supabase.js';
 
 let currentSessionWords = [];
 
 function updateLearnedCount() {
-    const count = state.words.filter(w => w.learnedDate).length;
+    const count = state.words.filter(w => w.learned_date).length;
     elements.learnedCount.textContent = count;
 }
 
-function buildQueues(reviewWords = null) {
-    let newQ, reviewQ;
-    if (reviewWords) {
-        newQ = [];
-        reviewQ = [...reviewWords].sort(() => Math.random() - 0.5);
-    } else {
-        const today = getToday();
-        const unlearnedWords = state.words.filter(w => !w.isLearning && (!w.interval || w.interval === 0));
-        const dueForReview = state.words.filter(w => w.interval > 0 && new Date(w.nextReview) <= today);
-        
-        newQ = unlearnedWords.slice(0, NEW_WORDS_PER_DAY);
-        reviewQ = dueForReview.sort(() => Math.random() - 0.5);
-    }
+function buildQueues() {
+    const today = getToday();
+    currentSessionWords = state.words.filter(w => w.deck_id === state.activeDeckId);
+    
+    const unlearnedWords = currentSessionWords.filter(w => !w.is_learning && (!w.interval || w.interval === 0));
+    const dueForReview = currentSessionWords.filter(w => w.interval > 0 && new Date(w.next_review) <= today);
+    
+    const newQ = unlearnedWords.slice(0, 5);
+    const reviewQ = dueForReview.sort(() => Math.random() - 0.5);
+    
     setQueues(newQ, reviewQ);
 }
 
@@ -53,8 +49,6 @@ function updateCardUI() {
 
 function showSummary() {
     elements.learningState.classList.add('hidden');
-    elements.testState.classList.add('hidden');
-    elements.testSummaryState.classList.add('hidden');
     elements.summaryState.classList.remove('hidden');
 }
 
@@ -71,7 +65,7 @@ export function nextCard() {
         } else if (state.newQueue.length > 0) {
             next = state.newQueue.shift();
             next.type = 'new';
-            next.isLearning = true;
+            next.is_learning = true;
         }
         
         setCurrentCard(next);
@@ -89,31 +83,53 @@ async function processAnswer(difficulty) {
     if (!state.currentCard) return;
 
     const card = state.currentCard;
+    let updateData = {};
+
     if (difficulty === 1) { // Trudne
         card.interval = 0;
-        state.reviewQueue.unshift(card); // Wraca na początek kolejki
+        state.reviewQueue.unshift(card);
+        updateData = { interval: 0, is_learning: true };
     } else { // Łatwe
-        card.isLearning = false;
-        card.interval = Math.max(1, (card.interval || 0) * (card.easeFactor || 2.5));
-        if (!card.learnedDate) {
-            card.learnedDate = getToday().toISOString();
-            updateLearnedCount();
+        card.is_learning = false;
+        card.interval = Math.max(1, (card.interval || 0) * (card.ease_factor || 2.5));
+        if (!card.learned_date) {
+            card.learned_date = getToday().toISOString();
         }
-        card.easeFactor = (card.easeFactor || 2.5) + 0.1;
+        card.ease_factor = (card.ease_factor || 2.5) + 0.1;
+        
+        updateData = {
+            is_learning: false,
+            interval: card.interval,
+            ease_factor: card.ease_factor,
+            learned_date: card.learned_date,
+            next_review: addDays(getToday(), Math.round(card.interval)).toISOString()
+        };
     }
-    card.nextReview = addDays(getToday(), Math.round(card.interval)).toISOString();
+    
+    // Asynchronicznie wysyłamy aktualizację do Supabase
+    const { error } = await supabaseClient
+        .from('words')
+        .update(updateData)
+        .eq('id', card.id);
 
-    const wordStore = getTransaction(state.db, 'words', 'readwrite');
-    wordStore.put(card);
+    if (error) {
+        console.error("Błąd podczas zapisywania postępu:", error);
+        alert("Nie udało się zapisać postępu. Sprawdź połączenie z internetem.");
+    } else {
+        console.log(`Zaktualizowano postęp dla słówka ID: ${card.id}`);
+        // Aktualizujemy też dane w naszym lokalnym stanie, aby UI był spójny
+        const wordInState = state.words.find(w => w.id === card.id);
+        if (wordInState) Object.assign(wordInState, updateData);
+        updateLearnedCount();
+    }
 
     nextCard();
 }
 
-export async function startSession(reviewWords = null) {
+export async function startSession() {
     elements.learningState.classList.remove('hidden');
-    elements.testState.classList.add('hidden');
-    elements.testSummaryState.classList.add('hidden');
     elements.summaryState.classList.add('hidden');
+    elements.testState.classList.add('hidden');
 
     if (!state.activeDeckId) {
         elements.learningState.classList.add('hidden');
@@ -123,11 +139,8 @@ export async function startSession(reviewWords = null) {
     }
     elements.loadingState.classList.add('hidden');
     
-    const wordsForSession = reviewWords || await getAllWordsByDeckId(state.db, state.activeDeckId);
-    setWords(wordsForSession);
     updateLearnedCount();
-
-    buildQueues(reviewWords);
+    buildQueues();
 
     if (state.reviewQueue.length === 0 && state.newQueue.length === 0) {
         showSummary();
@@ -137,29 +150,7 @@ export async function startSession(reviewWords = null) {
     }
 }
 
-async function handleImageUpload(event, isGlobal) {
-    const file = event.target.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
-    
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-        const imageDataUrl = e.target.result;
-        if (isGlobal) {
-            setGlobalFlashcardBg(imageDataUrl);
-            await setAppData(state.db, 'globalFlashcardBg', imageDataUrl);
-            if (state.currentCard) elements.cardFrontBg.src = imageDataUrl;
-        } else if (state.currentCard) {
-            elements.cardImage.src = imageDataUrl;
-            elements.cardImage.style.display = 'block';
-            state.currentCard.image = imageDataUrl;
-            const store = getTransaction(state.db, 'words', 'readwrite');
-            store.put(state.currentCard);
-        }
-    };
-    reader.readAsDataURL(file);
-    event.target.value = ''; // Reset input
-}
-
+// OTO KOMPLETNA FUNKCJA initCards
 export function initCards() {
     elements.showAnswerBtn.addEventListener('click', () => {
         elements.flashcard.classList.add('is-flipped');
@@ -184,48 +175,15 @@ export function initCards() {
         e.stopPropagation();
         if (state.currentCard) speak(state.currentCard.example_it, 'it-IT', 1.0);
     });
-    
+
+    // UWAGA: Logika dodawania obrazków będzie wymagała dalszej pracy (przesyłanie do Supabase Storage).
+    // Na razie zostawiamy listener, ale bez pełnej funkcjonalności synchronizacji.
     elements.addImageBtn.addEventListener('click', () => {
-        if (state.currentCard) elements.imageUploadInput.click();
-    });
-
-    elements.uploadGlobalBgBtn.addEventListener('click', () => elements.globalBgUploadInput.click());
-
-    elements.imageUploadInput.addEventListener('change', (e) => handleImageUpload(e, false));
-    elements.globalBgUploadInput.addEventListener('change', (e) => handleImageUpload(e, true));
-
-    elements.uploadHeaderBtn.addEventListener('click', () => elements.headerUploadInput.click());
-    elements.headerUploadInput.addEventListener('change', async (event) => {
-        const file = event.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                elements.headerImage.src = e.target.result;
-                await setAppData(state.db, 'headerImage', e.target.result);
-            };
-            reader.readAsDataURL(file);
+        if (state.currentCard) {
+            alert("Funkcja dodawania obrazków w chmurze jest w budowie!");
+            // elements.imageUploadInput.click();
         }
-                event.target.value = '';
     });
-} // <-- ❗️ UPEWNIJ SIĘ, ŻE TEN NAWIAS ZAMYKA FUNKCJĘ initCards
-
-
-// ❗️ A TO JEST NOWA FUNKCJA, KTÓRA POWINNA BYĆ TUTAJ,
-// CAŁKOWICIE POZA I POD FUNKCJĄ initCards
-export function resetSessionUI() {
-    // Ukryj wszystkie aktywne stany
-    elements.learningState.classList.add('hidden');
-    elements.summaryState.classList.add('hidden');
-    elements.testState.classList.add('hidden');
-    elements.testSummaryState.classList.add('hidden');
-
-    // Wyzeruj liczniki w interfejsie
-    elements.newCount.textContent = '0';
-    elements.reviewCount.textContent = '0';
-    elements.learnedCount.textContent = '0';
-    elements.activeDeckName.textContent = 'Brak';
-
-    // Pokaż komunikat powitalny/instrukcję
-    elements.loadingState.innerHTML = '<p class="text-center text-slate-500 p-8">Zaloguj się i wybierz talię, aby rozpocząć naukę.</p>';
-    elements.loadingState.classList.remove('hidden');
+    
+    elements.startNewSessionEarlyBtn.addEventListener('click', startSession);
 }

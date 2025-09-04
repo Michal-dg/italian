@@ -1,17 +1,17 @@
 // js/ui/stats.js
 import { state, setStatsChart } from '../state.js';
 import { elements } from './domElements.js';
-import { getTransaction } from '../database.js';
 import { openModal } from './modals.js';
 import { formatDate } from '../utils.js';
 
 async function renderStatsChart() {
-    const store = getTransaction(state.db, 'words');
-    const allWords = await new Promise(res => store.getAll().onsuccess = e => res(e.target.result));
+    // NOWA LOGIKA: Czytamy dane bezpośrednio ze stanu aplikacji (który jest zasilany z Supabase)
+    const allWords = state.words; 
+    
     const learnedByDay = allWords
-        .filter(w => w.learnedDate)
+        .filter(w => w.learned_date) // Używamy 'learned_date' zgodnie ze schematem bazy danych
         .reduce((acc, word) => {
-            const day = formatDate(new Date(word.learnedDate));
+            const day = formatDate(new Date(word.learned_date));
             acc[day] = (acc[day] || 0) + 1;
             return acc;
         }, {});
@@ -22,7 +22,9 @@ async function renderStatsChart() {
         return new Date(`${yearA}-${monthA}-${dayA}`) - new Date(`${yearB}-${monthB}-${dayB}`);
     });
 
-    if (state.statsChart) state.statsChart.destroy();
+    if (state.statsChart) {
+        state.statsChart.destroy();
+    }
     
     const chart = new Chart(elements.statsChartCanvas, {
         type: 'bar',
@@ -37,8 +39,19 @@ async function renderStatsChart() {
             }]
         },
         options: {
-            scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
-            plugins: { legend: { display: false } }
+            scales: { 
+                y: { 
+                    beginAtZero: true, 
+                    ticks: { 
+                        stepSize: 1 
+                    } 
+                } 
+            },
+            plugins: { 
+                legend: { 
+                    display: false 
+                } 
+            }
         }
     });
     setStatsChart(chart);

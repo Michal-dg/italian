@@ -2,39 +2,36 @@
 import { supabaseClient } from '../api/supabase.js';
 import { elements } from './domElements.js';
 import { openModal, closeModal } from './modals.js';
-import { resetSessionUI } from './cards.js';
-import { setActiveDeckId, setWords, setQueues, setCurrentCard } from '../state.js';
+import { state } from '../state.js';
 
-// Pobieramy wszystkie potrzebne elementy z modala
+// Pobieramy dodatkowe elementy z modala, których nie ma w `elements.js`
 const resendConfirmBtn = document.getElementById('resend-confirm-btn');
 const forgotPasswordLink = document.getElementById('forgot-password-link');
 const resetPasswordForm = document.getElementById('reset-password-form');
 const backToLoginLink = document.getElementById('back-to-login-link');
 const authModalTitle = document.getElementById('auth-modal-title');
 
-
-function updateAuthUI(user) {
+// Ta funkcja jest teraz EKSPORTOWANA, aby main.js mógł jej używać
+export function updateAuthUI(user) {
     if (user) {
-        // Użytkownik zalogowany
+        // Użytkownik zalogowany: UKRYJ formularz, POKAŻ info o userze
         elements.authForm.classList.add('hidden');
+        elements.resetPasswordForm.classList.add('hidden');
         elements.authSuccessMessage.classList.add('hidden');
         elements.userInfo.classList.remove('hidden');
         elements.userEmailDisplay.textContent = user.email;
         console.log("Użytkownik zalogowany:", user.email);
     } else {
-        // Użytkownik wylogowany
+        // Użytkownik wylogowany: POKAŻ formularz, UKRYJ info o userze
         elements.authForm.classList.remove('hidden');
+        elements.resetPasswordForm.classList.add('hidden');
         elements.authSuccessMessage.classList.add('hidden');
         elements.userInfo.classList.add('hidden');
         elements.authForm.reset();
-        elements.decksList.innerHTML = '<p class="text-center text-slate-500 p-4">Zaloguj się, aby zobaczyć swoje talie.</p>';
-        
-        setActiveDeckId(null);
-        setWords([]);
-        setQueues([], []);
-        setCurrentCard(null);
-        resetSessionUI();
-        console.log("Użytkownik wylogowany. Stan aplikacji zresetowany.");
+        if (elements.decksList) {
+            elements.decksList.innerHTML = '<p class="text-center text-slate-500 p-4">Zaloguj się, aby zobaczyć swoje talie.</p>';
+        }
+        console.log("Użytkownik wylogowany.");
     }
 }
 
@@ -145,22 +142,26 @@ export async function handlePasswordUpdate(e) {
         updatePasswordMessage.innerHTML = 'Hasło zostało pomyślnie zmienione! Możesz teraz zamknąć to okno i zalogować się ponownie.';
         updatePasswordMessage.className = 'text-sm text-green-600';
         
-        // TA LINIA JEST KLUCZOWA I MUSI TU BYĆ
         supabaseClient.auth.signOut();
+        
+        setTimeout(() => {
+            closeModal(updatePasswordModal);
+        }, 3000);
     }
 }
 
 export function initAuth() {
     elements.showAuthBtn.addEventListener('click', async () => {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+        
+        // Resetujemy wygląd modala do stanu początkowego
+        elements.authForm.classList.remove('hidden');
         resetPasswordForm.classList.add('hidden');
         elements.authSuccessMessage.classList.add('hidden');
-        elements.userInfo.classList.add('hidden');
-        elements.authForm.classList.remove('hidden');
-        authModalTitle.textContent = 'Zaloguj się lub zarejestruj';
-        resendConfirmBtn.classList.add('hidden');
         elements.authErrorMessage.classList.add('hidden');
-
-        const { data: { user } } = await supabaseClient.auth.getUser();
+        resendConfirmBtn.classList.add('hidden');
+        authModalTitle.textContent = 'Zaloguj się lub zarejestruj';
+        
         updateAuthUI(user);
         openModal(elements.authModal);
     });
@@ -184,8 +185,4 @@ export function initAuth() {
     elements.logoutBtn.addEventListener('click', handleLogout);
     resendConfirmBtn.addEventListener('click', handleResendConfirmation);
     resetPasswordForm.addEventListener('submit', handlePasswordResetRequest);
-
-    supabaseClient.auth.onAuthStateChange((event, session) => {
-        updateAuthUI(session ? session.user : null);
-    });
 }
