@@ -7,4 +7,4 @@ export const DB_NAME = 'ParolaChiaveDB_v1';
 export const DB_VERSION = 1;
 
 // Klucz API Google (jeśli używasz) - pamiętaj, aby go chronić w prawdziwej aplikacji
-export const GOOGLE_API_KEY = "AIzaSyD7PvVy1ODFVLoXVrZd0e-6I8EmaWnbDWwAPI";
+export const GOOGLE_API_KEY = "AIzaSyD7PvVy1ODFVLoXVrZd0e-6I8EmaWnbDWw";
